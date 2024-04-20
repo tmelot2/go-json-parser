@@ -62,6 +62,12 @@ func TestLexerInvalidJson(t *testing.T) {
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
+
+	// Test error for number and then invalid string
+	_, err = runLexerWithStr(`{"one: 1.111 "abcd"}`)
+	if err == nil {
+		t.Error("Expected an error, did not error")
+	}
 }
 
 func TestLexerTokenCounts(t *testing.T) {

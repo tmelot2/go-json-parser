@@ -1,3 +1,7 @@
+/*
+	Uses real JSON parsing library that I am writing.
+*/
+
 package main
 
 import (

@@ -1,3 +1,11 @@
+/*
+	Does not parse JSON, instead it scans each JSON line & picks out the points.
+
+	Since we know the exact JSON format because we're generating it, we rely on that format
+	to scan for points on each line. This will work for the course, but it's not actually a
+	JSON parser. I may try out coursework with both this & the real parser I'm writing.
+*/
+
 package main
 
 import (

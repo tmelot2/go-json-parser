@@ -1,8 +1,8 @@
-package main
-
 /*
 	Generates Haversine points JSON data file. Also computes Haversine & prints reference answer.
 */
+
+package main
 
 import (
 	"flag"

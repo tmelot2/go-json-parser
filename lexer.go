@@ -7,16 +7,8 @@ import (
 
 /*
 	Lexer works by scanning thru a JSON string & splitting it into tokens. It keeps track
-	of the current scan position, & the only logic that advances the position is lex().
-	The functions that do the actual lexeing only return the number of characters consumed,
-	which is what lex() uses to advance the position.
+	of the current scan position (see NOTE-1 below for more on that).
 */
-
-type Lexer struct {
-	Debug 	 bool
-	data 	 string
-	pos 	 int
-}
 
 // JSON syntax
 const JSON_SYNTAX_WHITESPACE = " \n\t"
@@ -48,6 +40,12 @@ type Token struct {
 	Value 	string
 }
 
+type Lexer struct {
+	Debug 	 bool
+	data 	 string
+	pos 	 int
+}
+
 // Create & return a new Lexer instance
 func newLexer(data string) *Lexer {
 	return &Lexer{
@@ -60,6 +58,10 @@ func (l *Lexer) getUnlexedData() string {
 	return l.data[l.pos:]
 }
 
+// Lexes the internal string
+// NOTE-1: This is the ONLY function that advances the lexer's position. The functions that do
+// the actual lexing only return the number of characters consumed, which lex() uses to advance
+// the position.
 func (l *Lexer) lex() ([]Token, error) {
 	var tokens []Token
 
@@ -82,7 +84,10 @@ func (l *Lexer) lex() ([]Token, error) {
 		}
 
 		// Lex strings
-		stringToken, stringCharsRead := l.lexString()
+		stringToken, stringCharsRead, err := l.lexString()
+		if err != nil {
+			return tokens, err
+		}
 		if stringCharsRead > 0 {
 			tokens = append(tokens, *stringToken)
 			l.pos += stringCharsRead
@@ -101,7 +106,7 @@ func (l *Lexer) lex() ([]Token, error) {
 		// TODO: Lex bools
 		// TODO: Lex null
 
-		err := errors.New(fmt.Sprintf("Unexpected character \"%s\"", l.getUnlexedData()))
+		err = errors.New(fmt.Sprintf("Unexpected character \"%s\"", l.getUnlexedData()))
 		return tokens, err
 	}
 
@@ -168,7 +173,7 @@ func (l *Lexer) lexJsonSyntax() (*Token, int) {
 }
 
 // Scans for strings (like "a_string") & returns it along with number of characters consumed.
-func (l *Lexer) lexString() (*Token, int) {
+func (l *Lexer) lexString() (*Token, int, error) {
 	s := l.getUnlexedData()
 	lexedStr := ""
 	numCharsRead := 0
@@ -179,7 +184,7 @@ func (l *Lexer) lexString() (*Token, int) {
 		numCharsRead += 1
 	} else {
 		l.DebugPrintf("%s is not a string\n", string(s[0]))
-		return nil, numCharsRead
+		return nil, numCharsRead, nil
 	}
 
 	// Scan string until we find closing quote
@@ -188,7 +193,7 @@ func (l *Lexer) lexString() (*Token, int) {
 		if string(c) == JSON_SYNTAX_QUOTE {
 			numCharsRead += 1
 			l.DebugPrintf("Returning lexed string %s\n", lexedStr)
-			return &Token{Type: JsonString, Value: lexedStr}, numCharsRead
+			return &Token{Type: JsonString, Value: lexedStr}, numCharsRead, nil
 		} else {
 			numCharsRead += 1
 			lexedStr += string(c)
@@ -196,8 +201,9 @@ func (l *Lexer) lexString() (*Token, int) {
 		}
 	}
 
-	l.DebugPrintln("Error: Expected end of string quote")
-	return nil, numCharsRead
+	// Error becasue we ran off edge of string without finding end quote
+	err := errors.New(fmt.Sprint("End quote for string not found"))
+	return nil, numCharsRead, err
 }
 
 // Scans for numbers (like "1" or "1.234") & returns it along with number of characters consumed.

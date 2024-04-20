@@ -7,6 +7,7 @@ import (
 
 func runLexerWithStr(s string) ([]Token, error) {
 	lexer := newLexer(s)
+	// lexer.Debug = true
 	result, err := lexer.lex()
 	return result, err
 }
@@ -24,6 +25,12 @@ func TestLexerEmptyJson(t *testing.T) {
 		t.Errorf("Expected to lex 4 tokens, lexed %d instead", len(result))
 	}
 
+	// Test lots of nested empty objects & arrays
+	result, _ = runLexerWithStr("{[[[{{[{[{[]}]}]}}]]]}")
+	if len(result) != 22 {
+		t.Errorf("Expected to lex 22 tokens, lexed %d instead", len(result))
+	}
+
 	// Test super empty
 	_, err := runLexerWithStr("")
 	if err != nil {
@@ -32,14 +39,26 @@ func TestLexerEmptyJson(t *testing.T) {
 }
 
 func TestLexerInvalidJson(t *testing.T) {
-	// Test error on invalid
+	// Test error on invalid character
 	_, err := runLexerWithStr("{/}")
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
 
-	// Test error on invalid
+	// Test error on invalid character
 	_, err = runLexerWithStr("/")
+	if err == nil {
+		t.Error("Expected an error, did not error")
+	}
+
+	// Test error on invalid characters (single quote)
+	_, err = runLexerWithStr(`{'one': 1.111}`)
+	if err == nil {
+		t.Error("Expected an error, did not error")
+	}
+
+	// Test error for unclosed string
+	_, err = runLexerWithStr(`{"one: 1.111}`)
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
@@ -76,5 +95,13 @@ func TestLexerTokenCounts(t *testing.T) {
 	result, _ = runLexerWithStr(`{"rankings": [{"name": "Smash Ultimate", "rank": 1}, {"name": "Noita", "rank": 2}]}`)
 	if len(result) != 25 {
 		t.Errorf("Expected to lex 25 tokens, lexed %d instead", len(result))
+	}
+
+	// Test numbers that run to end of unclosed JSON
+	// (It's not valid JSON, but the lexer doesn't care, just checking it parses
+	// the number token right)
+	result, _ = runLexerWithStr(`{"first": 1.00000000000002`)
+	if result[len(result)-1].Value != "1.00000000000002" {
+		t.Errorf("Expected to find number string 1.00000000000002, found %s instead", result[len(result)-1].Value)
 	}
 }

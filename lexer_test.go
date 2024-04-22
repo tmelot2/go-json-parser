@@ -39,32 +39,44 @@ func TestLexerEmptyJson(t *testing.T) {
 }
 
 func TestLexerInvalidJson(t *testing.T) {
-	// Test error on invalid character
+	// Test for error on invalid character
 	_, err := runLexerWithStr("{/}")
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
 
-	// Test error on invalid character
+	// Test for error on invalid character
 	_, err = runLexerWithStr("/")
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
 
-	// Test error on invalid characters (single quote)
+	// Test for error on invalid characters (single quote)
 	_, err = runLexerWithStr(`{'one': 1.111}`)
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
 
-	// Test error for unclosed string
+	// Test for error on missing quote on key
+	_, err = runLexerWithStr(`{one: 1.111}`)
+	if err == nil {
+		t.Error("Expected an error, did not error")
+	}
+
+	// Test for error for unclosed string
 	_, err = runLexerWithStr(`{"one: 1.111}`)
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}
 
-	// Test error for number and then invalid string
+	// Test for error for number and then invalid string
 	_, err = runLexerWithStr(`{"one: 1.111 "abcd"}`)
+	if err == nil {
+		t.Error("Expected an error, did not error")
+	}
+
+	// Test for error with not-yet-implemented boolean
+	_, err = runLexerWithStr(`{"one": true}`)
 	if err == nil {
 		t.Error("Expected an error, did not error")
 	}

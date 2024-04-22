@@ -232,6 +232,9 @@ func (l *Lexer) lexNumber() (*Token, int) {
 	}
 }
 
+// TODO: Scans for bools (true or false) & returns it along with number of characters consumed.
+// func (l *Lexer) lexBool() (*Token, int) {
+
 func (l *Lexer) DebugPrintf(format string, a ...interface{}) {
 	if l.Debug {
 		fmt.Printf(format, a...)

@@ -58,7 +58,7 @@ func main() {
 	lexer.Debug = DEBUG
 	lexedTokens, err := lexer.lex()
 	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("Lexer error: %s\n", err)
 		fmt.Println("=========================================\nLEXED TOKENS (partial, see above error)\n=========================================")
 	} else {
 		fmt.Println("\n=====================\nLEXED TOKENS\n=====================")
@@ -70,11 +70,10 @@ func main() {
 
 	fmt.Println("")
 
-	fmt.Println("Parser stuff")
 	parser := newParser(lexedTokens)
 	result, err := parser.Parse()
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Paerser error:", err)
 	}
 	fmt.Println("Parser result:", result)
 

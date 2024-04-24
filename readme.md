@@ -2,6 +2,8 @@
 
 A simple JSON parser written in Go. Still a work-in-progress.
 
+Created with Go 1.22.1, no external dependencies.
+
 ## Origins
 
 This project was created as part of the coursework for the ["Performance-Aware Programming" course](https://www.computerenhance.com/p/table-of-contents) I am taking. Some of the coursework artifacts are still in this project, like the Haversine compute scripts. It seemed useful to make the parser stuff into a separate module to gain experience with that while learning Go.

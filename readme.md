@@ -10,7 +10,24 @@ I am also learning Go, & this is the 1st project I am using it with, so there's 
 
 ## Usage
 
-TODO
+Run unit tests:
+
+```sh
+$ make test
+```
+
+Generate `pairs.json` file:
+```sh
+$ make generate pairs
+
+Ex: $ make generate 100
+```
+
+Run app with JSON parser:
+```sh
+make run
+```
+
 
 ## Progress
 

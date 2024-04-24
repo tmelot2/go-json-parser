@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+/*
+	TODO: Parser docs
+*/
+
 
 type Parser struct {
 	Debug 	 bool
@@ -53,7 +57,6 @@ func (p *Parser) Parse() (string, error) {
 	// Prime & loop over tokens
 	t := p.PeekToken(0)
 	for t != nil {
-		fmt.Printf("wwwwwwwwww pos = %d, t = %s, manual t = %s\n", p.pos, t, p.Tokens[p.pos])
 		// Error on missing open bracket to start JSON
 		if p.IsFirstToken() && t.Type != JsonObjectStart {
 			msg := fmt.Sprintf(`Unexpected start of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_LEFT_BRACE)

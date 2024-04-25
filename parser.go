@@ -55,14 +55,6 @@ func (p *Parser) getNextToken() *Token {
 	}
 }
 
-// // Advances position by the given int, caps at token len - 1.
-// func (p *Parser) advancePosition(num int) {
-// 	p.pos += num
-// 	if p.pos > len(p.Tokens) - 1 {
-// 		p.pos = len(p.Tokens) - 1
-// 	}
-// }
-
 func (p *Parser) isFirstToken() bool {
 	return p.pos == 0
 }
@@ -72,27 +64,6 @@ func (p *Parser) isLastToken() bool {
 }
 
 func (p *Parser) Parse() (map[string]interface{}, error) {
-	// result := ""
-
-	// // Prime & loop over tokens
-	// t := p.peekToken(0)
-	// for t != nil {
-	// 	// Error on missing open bracket to start JSON
-	// 	if p.isFirstToken() && t.Type != JsonObjectStart {
-	// 		msg := fmt.Sprintf(`Unexpected start of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_LEFT_BRACE)
-	// 	} else if p.isLastToken() && t.Type != JsonObjectEnd {
-	// 	// Error on missing end bracket to end JSON
-	// 		msg := fmt.Sprintf(`Unexpected end of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_RIGHT_BRACE)
-	// 		return "", errors.New(msg)
-	// 	} else {
-	// 		result += fmt.Sprintf("%s ", t.Value)
-	// 	}
-
-	// 	t = p.getNextToken()
-	// }
-
-	// return result, nil
-
 	t := p.peekToken(0)
 	if t.Type != JsonObjectStart {
 		msg := fmt.Sprintf(`Unexpected start of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_LEFT_BRACE)

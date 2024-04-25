@@ -5,7 +5,7 @@ import (
 )
 
 
-func runParserWithStr(s string) (string, error) {
+func runParserWithStr(s string) (map[string]string, error) {
 	lexer := newLexer(s)
 	// lexer.Debug = true
 	tokens, _ := lexer.lex()

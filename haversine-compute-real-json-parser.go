@@ -71,9 +71,9 @@ func main() {
 	fmt.Println("")
 
 	parser := newParser(lexedTokens)
-	result, err := parser.Parse()
+	result, err := parser.Parse(true)
 	if err != nil {
-		fmt.Println("Paerser error:", err)
+		fmt.Println("Parser error:", err)
 	}
 	fmt.Println("Parser result:", result)
 

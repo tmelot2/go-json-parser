@@ -7,6 +7,16 @@ import (
 
 /*
 	TODO: Parser docs
+	TODO: Unsafe dynamic typing docs
+	- Trading off type safety to gain simplicity (but is it, really?)
+	    - Parsed JSON is a nested map of varying types FOR EVERY FIELD
+	    - (I think) you MUST cast each map traversal to the correct type in calling code, which will be very messy
+	    	- Maybe there's a way to metaprogram/reflect out of this problem with a type definition
+	    - BUT we get a parser that is extremely simple & has zero reflection
+	    - Alternate idea: What about using reflection to map using builtin struct JSON markup?
+	    	- seems like a ton of work to do this, def not simple
+
+	    "my current design is trading off type safety to gain simplicity. the way it's implemented, my parsing functions will return a string or a number or a map. the calling client code will be responsible for safely traversing the map. since i know the exact use case, and it's only 1 JSON format, that seems like a fair trade off."
 */
 
 
@@ -61,7 +71,7 @@ func (p *Parser) isLastToken() bool {
 	return p.pos == len(p.Tokens)-1
 }
 
-func (p *Parser) Parse(isRoot bool) (map[string]string, error) {
+func (p *Parser) Parse() (map[string]interface{}, error) {
 	// result := ""
 
 	// // Prime & loop over tokens
@@ -83,32 +93,40 @@ func (p *Parser) Parse(isRoot bool) (map[string]string, error) {
 
 	// return result, nil
 
-	var t *Token
-
-	if isRoot {
-		t = p.peekToken(0)
-	} else {
-		t = p.getNextToken()
+	t := p.peekToken(0)
+	if t.Type != JsonObjectStart {
+		msg := fmt.Sprintf(`Unexpected start of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_LEFT_BRACE)
+		return nil, errors.New(msg)
 	}
 
-	if t != nil {
-		fmt.Printf("Parse(): Checking token %s, pos = %d\n", t, p.pos)
-
-		if isRoot && t.Type != JsonObjectStart {
-			msg := fmt.Sprintf(`Unexpected start of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_LEFT_BRACE)
-			nilResult := make(map[string]string)
-			return nilResult, errors.New(msg)
-		}
-	}
-
-	// Consume the token & parse
 	result, err := p.parseObject()
+	return result, err
+}
+
+// TODO: Equivalent to Python ver parse()
+// Parses remaining JSON. All parsing should be done thru this function.
+func (p *Parser) parseJson() (map[string]interface{}, error) {
+	var result map[string]interface{}
+	var err error
+
+	t := p.getNextToken()
+
+	// if t != nil {
+	fmt.Printf("Parse(): Checking token %s, pos = %d\n", t, p.pos)
+
+	if t.Type == JsonObjectStart {
+		result, err = p.parseObject()
+	} else if t.Type == JsonArrayStart {
+		err = errors.New("JSON arrays not yet implemented")
+	} else if t.Type == JsonString || t.Type == JsonNumber {
+
+	}
 
 	return result, err
 }
 
-func (p *Parser) parseObject() (map[string]string, error) {
-	result := make(map[string]string)
+func (p *Parser) parseObject() (map[string]interface{}, error) {
+	result := make(map[string]interface{})
 
 	t := p.getNextToken()
 	for t != nil {
@@ -131,8 +149,19 @@ func (p *Parser) parseObject() (map[string]string, error) {
 		}
 
 		// Parse value
+		var value interface{}
+		var err error
 		valueToken := p.getNextToken()
-		value := valueToken.Value
+		if valueToken.Type == JsonObjectStart {
+			value, err = p.parseObject()
+			if err != nil {
+				return result, err
+			}
+		} else if valueToken.Type == JsonArrayStart {
+			return result, errors.New("JSON arrays not yet implemented")
+		} else if valueToken.Type == JsonString || valueToken.Type == JsonNumber {
+			value = valueToken.Value
+		}
 
 		// Set result
 		result[key] = value

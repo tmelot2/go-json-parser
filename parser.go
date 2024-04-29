@@ -85,7 +85,7 @@ func (p *Parser) GetNextToken() *Token {
 }
 
 // Parses & returns JSON object starting at the next token. If parsing an object or array, consumes the open brace/bracket
-// & then recurses.
+// and then parses the value, which could recurse back in here.
 func (p *Parser) ParseObject() (map[string]any, error) {
 	result := make(map[string]any)
 
@@ -101,27 +101,13 @@ func (p *Parser) ParseObject() (map[string]any, error) {
 
 		// Parse value
 		valueToken := p.GetNextToken()
-		switch valueToken.Type {
-		// Value is a nested object
-		case JsonObjectStart:
-			var valueErr error
-			result[keyToken.Value], valueErr = p.ParseObject()
-			if valueErr != nil {
-				return result, valueErr
-			}
-		// Value is a string
-		case JsonString:
-			result[keyToken.Value] = valueToken.Value
-		// Value is a number
-		case JsonNumber:
-			// TODO: How to handle strconv errors?
-			// Float
-			if strings.Contains(valueToken.Value, ".") {
-				result[keyToken.Value], _ = strconv.ParseFloat(valueToken.Value, 64)
-			} else {
-			// Int
-				result[keyToken.Value], _ = strconv.Atoi(valueToken.Value)
-			}
+		parsedValue, valueErr := p.ParseValue(valueToken)
+		if valueErr != nil {
+			msg := fmt.Sprintf("Error: %s", valueErr)
+			return result, errors.New(msg)
+		}
+		if parsedValue != nil {
+			result[keyToken.Value] = parsedValue
 		}
 
 		// Parse next item or finish
@@ -135,6 +121,37 @@ func (p *Parser) ParseObject() (map[string]any, error) {
 			msg := fmt.Sprintf("Expected field separator \"%s\" or close object \"%s\", found \"%s\" instead", JSON_SYNTAX_COMMA, JSON_SYNTAX_RIGHT_BRACE, nextToken.Value)
 			err := errors.New(msg)
 			return result, err
+		}
+	}
+
+	return result, nil
+}
+
+// Parses & returns the given value token. May recurse back into ParseObject or Array. Does not
+// itself consume tokens, but makes calls that will.
+func (p *Parser) ParseValue(valueToken *Token) (any, error) {
+	var result any
+
+	switch valueToken.Type {
+	// Value is a nested object
+	case JsonObjectStart:
+		var err error
+		result, err = p.ParseObject()
+		if err != nil {
+			return result, err
+		}
+	// Value is a string
+	case JsonString:
+		result = valueToken.Value
+	// Value is a number
+	case JsonNumber:
+		// TODO: How to handle strconv errors?
+		// Float
+		if strings.Contains(valueToken.Value, ".") {
+			result, _ = strconv.ParseFloat(valueToken.Value, 64)
+		} else {
+		// Int
+			result, _ = strconv.Atoi(valueToken.Value)
 		}
 	}
 

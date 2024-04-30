@@ -33,7 +33,7 @@ make run
 
 ## Progress
 
-- The lexer works, but is missing support for boolean & null types.
-- The parser scaffolding is in place, but no real parsing of data is implemented yet. Currently working on this.
-	- I think the parser design is going to be a recursive descent parser.
+- Parser works! It's still a bit limited, but it works.
+- Supported types: Object, array, string, int, float
+- Parsed data is type `any`, including sub-objects & arrays. You must cast data as you pull it out. Looking at solutions to this.
 - There are unit tests for the lexer & parser, which will continue to be expanded.

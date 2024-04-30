@@ -3,10 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 /*
-	TODO: Parser docs
 	TODO: Unsafe dynamic typing docs
 	- Trading off type safety to gain simplicity (but is it, really?)
 	    - Parsed JSON is a nested map of varying types FOR EVERY FIELD
@@ -17,6 +18,14 @@ import (
 	    	- seems like a ton of work to do this, def not simple
 
 	    "my current design is trading off type safety to gain simplicity. the way it's implemented, my parsing functions will return a string or a number or a map. the calling client code will be responsible for safely traversing the map. since i know the exact use case, and it's only 1 JSON format, that seems like a fair trade off."
+
+	Parser
+	- Loops over the list of tokens, parsing out JSON primitives into a map that is returned.
+
+	Design
+	- Recursive descent
+	- Tracks position in token list. Tokens are "consumed" with GetNextToken() i.e. position is incremented
+	- When parsing objects or arrays: The the "outer" call parses the open brace/bracket, the "inner" call parses the next token
 */
 
 
@@ -32,133 +41,162 @@ func newParser(tokens []Token) *Parser {
 	}
 }
 
-// Retuns token at given position, or nil if does not exist. Does NOT advance position.
-func (p *Parser) peekToken(pos int) *Token {
-	if pos < len(p.Tokens) - 1 {
-		token := p.Tokens[pos]
-		return &token
-	} else {
-		return nil
-	}
-}
-
-// Gets token at next position & returns it. DOES advance position.
-// TODO: Need this?
-func (p *Parser) getNextToken() *Token {
-	if p.pos < len(p.Tokens) - 1 {
-		p.pos += 1
-		token := p.Tokens[p.pos]
-		fmt.Printf("Returning next token \"%s\" (type %s)\n", token.Value, token.Type)
-		return &token
-	} else {
-		return nil
-	}
-}
-
-func (p *Parser) isFirstToken() bool {
-	return p.pos == 0
-}
-
-func (p *Parser) isLastToken() bool {
-	return p.pos == len(p.Tokens)-1
-}
-
-func (p *Parser) Parse() (map[string]interface{}, error) {
-	t := p.peekToken(0)
-	if t.Type != JsonObjectStart {
-		msg := fmt.Sprintf(`Unexpected start of JSON, found "%s", expected "%s"`, t.Value, JSON_SYNTAX_LEFT_BRACE)
-		return nil, errors.New(msg)
-	}
-
-	result, err := p.parseObject()
-	return result, err
-}
-
-// TODO: Equivalent to Python ver parse()
-// Parses remaining JSON. All parsing should be done thru this function.
-func (p *Parser) parseJson() (map[string]interface{}, error) {
-	var result map[string]interface{}
+// Parses tokens & returns map of result, or a partial result with an error. It tries to
+// return as much as it's parsed so far.
+func (p *Parser) Parse() (map[string]any, error) {
+	var result map[string]any
 	var err error
 
-	t := p.getNextToken()
-
-	// if t != nil {
-	fmt.Printf("Parse(): Checking token %s, pos = %d\n", t, p.pos)
-
-	if t.Type == JsonObjectStart {
-		result, err = p.parseObject()
-	} else if t.Type == JsonArrayStart {
-		err = errors.New("JSON arrays not yet implemented")
-	} else if t.Type == JsonString || t.Type == JsonNumber {
-
+	// Check for open brace to start JSON
+	firstToken := p.PeekToken(0)
+	if firstToken != nil && firstToken.Type != JsonObjectStart {
+		msg := fmt.Sprintf("Expected start of JSON \"%s\", found \"%s\" instead\n", JSON_SYNTAX_LEFT_BRACE, firstToken.Value)
+		err = errors.New(msg)
+		return result, err
 	}
 
-	return result, err
+	// Advance to next token
+	p.GetNextToken()
+	var objParseErr error
+	result, objParseErr = p.ParseObject()
+
+	return result, objParseErr
 }
 
-func (p *Parser) parseObject() (map[string]interface{}, error) {
-	result := make(map[string]interface{})
+// Returns token at index, otherwise nil. DOES NOT increment position.
+func (p *Parser) PeekToken(index int) *Token {
+	if len(p.Tokens) == 0 || index > len(p.Tokens)-1 {
+		return nil
+	}
 
-	t := p.getNextToken()
-	for t != nil {
-		fmt.Printf("parseObject(): Checking token %s, pos = %d\n", t, p.pos)
-		if t.Type == JsonObjectEnd {
-			return result, nil
-		}
+	return &p.Tokens[index]
+}
 
-		// Validate & parse key
-		if t.Type != JsonString {
-			msg := fmt.Sprintf("Expected %s type for object key, found %s instead", JsonString, t.Type)
-			return result, errors.New(msg)
-		}
-		key := t.Value
+// Returns next token. DOES increment position.
+func (p *Parser) GetNextToken() *Token {
+	if len(p.Tokens) == 0 || p.pos > len(p.Tokens)-1 {
+		return nil
+	}
 
-		// Validate field separator
-		if p.getNextToken().Type != JsonFieldAssignment {
-			msg := fmt.Sprintf(`Expected field assignment "%s" after key, found "%s" (type %s) instead`, JSON_SYNTAX_COLON, t.Value, t.Type)
-			return result, errors.New(msg)
+	oldPos := p.pos
+	p.pos += 1
+	// fmt.Printf("GetNextToken(): token = %s, oldPos = %d, pos = %d\n", p.Tokens[oldPos], oldPos, p.pos)
+	return &p.Tokens[oldPos]
+}
+
+// Parses & returns JSON object starting at the next token. If parsing an object or array, consumes the open brace/bracket
+// and then parses the value, which could recurse back in here.
+func (p *Parser) ParseObject() (map[string]any, error) {
+	result := make(map[string]any)
+
+	// Prime loop by parsing 1st key
+	keyToken := p.GetNextToken()
+	for keyToken != nil {
+		// Validate ":" after key
+		assignmentToken := p.GetNextToken()
+		if assignmentToken.Type != JsonFieldAssignment {
+			msg := fmt.Sprintf("Expected field assignment \"%s\", found \"%s\" instead", JSON_SYNTAX_COLON, assignmentToken.Value)
+			err := errors.New(msg)
+			return result, err
 		}
 
 		// Parse value
-		var value interface{}
-		var err error
-		valueToken := p.getNextToken()
-		if valueToken.Type == JsonObjectStart {
-			value, err = p.parseObject()
-			if err != nil {
-				return result, err
-			}
-		} else if valueToken.Type == JsonArrayStart {
-			return result, errors.New("JSON arrays not yet implemented")
-		} else if valueToken.Type == JsonString || valueToken.Type == JsonNumber {
-			value = valueToken.Value
-		}
-
-		// Set result
-		result[key] = value
-
-		// Parse end or next token
-		nextToken := p.getNextToken()
-		if nextToken.Type == JsonObjectEnd {
-			return result, nil
-		} else if nextToken.Type != JsonFieldSeparator {
-			msg := fmt.Sprintf(`Expected field separator "%s" after key, found "%s" instead`, JSON_SYNTAX_COMMA, nextToken.Value)
+		valueToken := p.GetNextToken()
+		parsedValue, valueErr := p.ParseValue(valueToken)
+		if valueErr != nil {
+			msg := fmt.Sprintf("Error: %s", valueErr)
 			return result, errors.New(msg)
 		}
+		if parsedValue != nil {
+			// fmt.Printf("ParseObject(): Setting result[%s] = %d\n", keyToken.Value, parsedValue)
+			result[keyToken.Value] = parsedValue
+		}
 
-		t = p.getNextToken()
+		// Parse next item or finish
+		nextToken := p.GetNextToken()
+		switch nextToken.Type {
+		case JsonFieldSeparator:
+			keyToken = p.GetNextToken()
+		case JsonObjectEnd:
+			return result, nil
+		default:
+			msg := fmt.Sprintf("Expected field separator \"%s\" or close object \"%s\", found \"%s\" instead", JSON_SYNTAX_COMMA, JSON_SYNTAX_RIGHT_BRACE, nextToken.Value)
+			err := errors.New(msg)
+			return result, err
+		}
 	}
 
-	// Error on missing close bracket
-	if t == nil {
-		msg := fmt.Sprintf(`Expected end of object "%s", found end of file instead`, JSON_SYNTAX_RIGHT_BRACE)
-		return result, errors.New(msg)
-	} else {
-		msg := fmt.Sprintf(`Expected field assignment "%s" after key, found "%s" (type %s) instead`, JSON_SYNTAX_COLON, t.Value, t.Type)
-		return result, errors.New(msg)
-	}
+	return result, nil
 }
 
-func (p *Parser) parseArray() string {
-	return ""
+// TODO
+func (p *Parser) ParseArray() ([]any, error) {
+	var result []any
+
+	// Parse 1st item
+	itemToken := p.GetNextToken()
+	for itemToken != nil {
+		value, err := p.ParseValue(itemToken)
+		if err != nil {
+			msg := fmt.Sprintf("Error: %s", err)
+			return result, errors.New(msg)
+		}
+		// Add to result
+		if value != nil {
+			result = append(result, value)
+		}
+
+		// Parse next item or finish
+		nextToken := p.GetNextToken()
+		switch nextToken.Type {
+		case JsonFieldSeparator:
+			itemToken = p.GetNextToken()
+		case JsonArrayEnd:
+			return result, nil
+		// TODO: Objects or other arrays
+		default:
+			msg := fmt.Sprintf("Expected field separator \"%s\" or close object \"%s\", found \"%s\" instead", JSON_SYNTAX_COMMA, JSON_SYNTAX_RIGHT_BRACKET, itemToken.Value)
+			return result, errors.New(msg)
+		}
+	}
+
+	return result, nil
+}
+
+// Parses & returns the given value token. May recurse back into ParseObject or Array. Does not
+// itself consume tokens, but may make calls that will.
+func (p *Parser) ParseValue(valueToken *Token) (any, error) {
+	var result any
+
+	switch valueToken.Type {
+	// Value is a nested object
+	case JsonObjectStart:
+		var err error
+		result, err = p.ParseObject()
+		if err != nil {
+			return result, err
+		}
+	// Value is an array
+	case JsonArrayStart:
+		var err error
+		result, err = p.ParseArray()
+		if err != nil {
+			return result, err
+		}
+	// Value is a string
+	case JsonString:
+		result = valueToken.Value
+	// Value is a number
+	case JsonNumber:
+		// TODO: How to handle strconv errors?
+		// Float
+		if strings.Contains(valueToken.Value, ".") {
+			result, _ = strconv.ParseFloat(valueToken.Value, 64)
+		} else {
+		// Int
+			result, _ = strconv.Atoi(valueToken.Value)
+		}
+	}
+
+	return result, nil
 }

@@ -89,6 +89,7 @@ func (p *Parser) GetNextToken() *Token {
 func (p *Parser) ParseObject() (map[string]any, error) {
 	result := make(map[string]any)
 
+	// Prime loop by parsing 1st key
 	keyToken := p.GetNextToken()
 	for keyToken != nil {
 		// Validate ":" after key
@@ -107,6 +108,7 @@ func (p *Parser) ParseObject() (map[string]any, error) {
 			return result, errors.New(msg)
 		}
 		if parsedValue != nil {
+			fmt.Printf("ParseObject(): Setting result[%s] = %d\n", keyToken.Value, parsedValue)
 			result[keyToken.Value] = parsedValue
 		}
 
@@ -127,24 +129,71 @@ func (p *Parser) ParseObject() (map[string]any, error) {
 	return result, nil
 }
 
+// TODO
+func (p *Parser) ParseArray() ([]any, error) {
+	var result []any
+
+	// Parse 1st item
+	itemToken := p.GetNextToken()
+	for itemToken != nil {
+		value, err := p.ParseValue(itemToken)
+		if err != nil {
+			msg := fmt.Sprintf("Error: %s", err)
+			return result, errors.New(msg)
+		}
+		// Add to result
+		if value != nil {
+			result = append(result, value)
+		}
+
+		// Parse next item or finish
+		nextToken := p.GetNextToken()
+		switch nextToken.Type {
+		case JsonFieldSeparator:
+			itemToken = p.GetNextToken()
+		case JsonArrayEnd:
+			return result, nil
+		// TODO: Objects or other arrays
+		default:
+			msg := fmt.Sprintf("Expected field separator \"%s\" or close object \"%s\", found \"%s\" instead", JSON_SYNTAX_COMMA, JSON_SYNTAX_RIGHT_BRACKET, itemToken.Value)
+			return result, errors.New(msg)
+		}
+	}
+
+	return result, nil
+}
+
 // Parses & returns the given value token. May recurse back into ParseObject or Array. Does not
-// itself consume tokens, but makes calls that will.
+// itself consume tokens, but may make calls that will.
 func (p *Parser) ParseValue(valueToken *Token) (any, error) {
 	var result any
+
+	fmt.Printf("ParseValue(): valueToken = %s", valueToken)
 
 	switch valueToken.Type {
 	// Value is a nested object
 	case JsonObjectStart:
+		fmt.Println("object!")
 		var err error
 		result, err = p.ParseObject()
 		if err != nil {
 			return result, err
 		}
+	// Value is an array
+	case JsonArrayStart:
+		fmt.Println("array!")
+		var err error
+		result, err = p.ParseArray()
+		if err != nil {
+			return result, err
+		}
 	// Value is a string
 	case JsonString:
+		fmt.Println("string!")
 		result = valueToken.Value
 	// Value is a number
 	case JsonNumber:
+		fmt.Println("number!")
 		// TODO: How to handle strconv errors?
 		// Float
 		if strings.Contains(valueToken.Value, ".") {
@@ -154,6 +203,7 @@ func (p *Parser) ParseValue(valueToken *Token) (any, error) {
 			result, _ = strconv.Atoi(valueToken.Value)
 		}
 	}
+	fmt.Println("Returning", result)
 
 	return result, nil
 }

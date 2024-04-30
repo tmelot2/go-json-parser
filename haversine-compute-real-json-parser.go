@@ -46,23 +46,8 @@ func main() {
 	strData := string(data)
 	DebugPrintln(strData)
 
-	// TODO: Combine lexer & parser into one function call
-
-	// Lex JSON
-	lexer := newLexer(strData)
-	lexer.Debug = DEBUG
-	lexedTokens, err := lexer.lex()
-	if err != nil {
-		fmt.Printf("Lexer error: %s\n", err)
-	}
-
-	// Parse JSON
-	parser := newParser(lexedTokens)
-	jsonResult, err := parser.Parse()
-	if err != nil {
-		fmt.Println("Parser error:", err)
-	}
-	// fmt.Println("Parser result:", jsonResult)
+	// Parse
+	jsonResult, err := ParseJson(strData)
 
 	// Loop over JSON to do stuff
 	// TODO: Figure out how to abstract casting stuff into separate client logic
@@ -73,6 +58,7 @@ func main() {
 		return
 	}
 
+	// Compute Haversine sum & average
 	haversineSum := 0.0
 	for _, p := range points {
 		point, ok2 := p.(map[string]any)

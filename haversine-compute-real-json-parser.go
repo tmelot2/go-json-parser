@@ -13,13 +13,6 @@ import (
 )
 
 
-type Point struct {
-	X0 float64
-	Y0 float64
-	X1 float64
-	Y1 float64
-}
-
 func DebugPrintf(format string, a ...interface{}) {
 	if DEBUG {
 		fmt.Printf(format, a...)
@@ -40,7 +33,7 @@ var DEBUG = false
 func main() {
 	const EARTH_RADIUS = 6372.8
 
-	// Parse input args
+	// Get input args
 	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
 	flag.Parse()
 
@@ -53,40 +46,45 @@ func main() {
 	strData := string(data)
 	DebugPrintln(strData)
 
-	// Lex JSON tokens
+	// TODO: Combine lexer & parser into one function call
+
+	// Lex JSON
 	lexer := newLexer(strData)
 	lexer.Debug = DEBUG
 	lexedTokens, err := lexer.lex()
 	if err != nil {
 		fmt.Printf("Lexer error: %s\n", err)
-		fmt.Println("=========================================\nLEXED TOKENS (partial, see above error)\n=========================================")
-	} else {
-		fmt.Println("\n=====================\nLEXED TOKENS\n=====================")
 	}
-	for _,t := range lexedTokens {
-		fmt.Printf("(\"%s\", %s), \n", t.Value, t.Type)
-	}
-	fmt.Printf("\nToken count: %d\n", len(lexedTokens))
 
-	fmt.Println("")
-
+	// Parse JSON
 	parser := newParser(lexedTokens)
-	result, err := parser.Parse()
+	jsonResult, err := parser.Parse()
 	if err != nil {
 		fmt.Println("Parser error:", err)
 	}
-	fmt.Println("Parser result:", result)
+	// fmt.Println("Parser result:", jsonResult)
 
-	// Haversine average for fake data
-	var points []Point
-	points = append(points, Point{X0:1.1, Y0:2.2, X1:3.3, Y1:4.4})
-	points = append(points, Point{X0:11.11, Y0:22.22, X1:33.33, Y1:44.44})
-	// Compute Haversines & average
-	haversineSum := 0.0
-	for _,p := range points {
-		haversineSum += referenceHaversine(p.X0, p.Y0, p.X1, p.Y1, EARTH_RADIUS)
+	// Loop over JSON to do stuff
+	fmt.Println("===============================")
+	points, ok := jsonResult["pairs"].([]any)
+	if !ok {
+		fmt.Println("Error casting pairs array")
+		return
 	}
 
+	haversineSum := 0.0
+	for _, p := range points {
+		point, ok2 := p.(map[string]any)
+		if !ok2 {
+			fmt.Println("Error casting point to map")
+			continue
+		}
+		x0 := point["x0"].(float64)
+		y0 := point["y0"].(float64)
+		x1 := point["x1"].(float64)
+		y1 := point["y1"].(float64)
+		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
+	}
 	avg := haversineSum / float64(len(points))
 	fmt.Printf("Count: %d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", len(points), haversineSum, avg)
 }

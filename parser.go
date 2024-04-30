@@ -108,7 +108,7 @@ func (p *Parser) ParseObject() (map[string]any, error) {
 			return result, errors.New(msg)
 		}
 		if parsedValue != nil {
-			fmt.Printf("ParseObject(): Setting result[%s] = %d\n", keyToken.Value, parsedValue)
+			// fmt.Printf("ParseObject(): Setting result[%s] = %d\n", keyToken.Value, parsedValue)
 			result[keyToken.Value] = parsedValue
 		}
 
@@ -168,12 +168,9 @@ func (p *Parser) ParseArray() ([]any, error) {
 func (p *Parser) ParseValue(valueToken *Token) (any, error) {
 	var result any
 
-	fmt.Printf("ParseValue(): valueToken = %s", valueToken)
-
 	switch valueToken.Type {
 	// Value is a nested object
 	case JsonObjectStart:
-		fmt.Println("object!")
 		var err error
 		result, err = p.ParseObject()
 		if err != nil {
@@ -181,7 +178,6 @@ func (p *Parser) ParseValue(valueToken *Token) (any, error) {
 		}
 	// Value is an array
 	case JsonArrayStart:
-		fmt.Println("array!")
 		var err error
 		result, err = p.ParseArray()
 		if err != nil {
@@ -189,11 +185,9 @@ func (p *Parser) ParseValue(valueToken *Token) (any, error) {
 		}
 	// Value is a string
 	case JsonString:
-		fmt.Println("string!")
 		result = valueToken.Value
 	// Value is a number
 	case JsonNumber:
-		fmt.Println("number!")
 		// TODO: How to handle strconv errors?
 		// Float
 		if strings.Contains(valueToken.Value, ".") {
@@ -203,7 +197,6 @@ func (p *Parser) ParseValue(valueToken *Token) (any, error) {
 			result, _ = strconv.Atoi(valueToken.Value)
 		}
 	}
-	fmt.Println("Returning", result)
 
 	return result, nil
 }

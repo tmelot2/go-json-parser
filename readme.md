@@ -34,5 +34,6 @@ make run
 ## Progress
 
 - Parser works! It's still a bit limited, but it works.
+- Supported types: Object, array, string, int, float
 - Parsed data is type `any`, including sub-objects & arrays. You must cast data as you pull it out. Looking at solutions to this.
 - There are unit tests for the lexer & parser, which will continue to be expanded.

@@ -65,6 +65,7 @@ func main() {
 	// fmt.Println("Parser result:", jsonResult)
 
 	// Loop over JSON to do stuff
+	// TODO: Figure out how to abstract casting stuff into separate client logic
 	fmt.Println("===============================")
 	points, ok := jsonResult["pairs"].([]any)
 	if !ok {

@@ -20,7 +20,7 @@ import (
 	    "my current design is trading off type safety to gain simplicity. the way it's implemented, my parsing functions will return a string or a number or a map. the calling client code will be responsible for safely traversing the map. since i know the exact use case, and it's only 1 JSON format, that seems like a fair trade off."
 
 	Parser
-	- Loops over the list of tokens, parsing out JSON primitives into a map that is returned.
+	- Loops over the list of tokens, parsing out JSON primitives into a map of any that is returned.
 
 	Design
 	- Recursive descent
@@ -195,18 +195,17 @@ func (p *Parser) parseArray() ([]any, error) {
 // itself consume tokens, but may make calls that will.
 func (p *Parser) parseValue(valueToken *Token) (any, error) {
 	var result any
+	var err error
 
 	switch valueToken.Type {
 	// Value is a nested object
 	case JsonObjectStart:
-		var err error
 		result, err = p.parseObject()
 		if err != nil {
 			return result, err
 		}
 	// Value is an array
 	case JsonArrayStart:
-		var err error
 		result, err = p.parseArray()
 		if err != nil {
 			return result, err
@@ -219,10 +218,16 @@ func (p *Parser) parseValue(valueToken *Token) (any, error) {
 		// TODO: How to handle strconv errors?
 		// Float
 		if strings.Contains(valueToken.Value, ".") {
-			result, _ = strconv.ParseFloat(valueToken.Value, 64)
+			result, err = strconv.ParseFloat(valueToken.Value, 64)
+			if err != nil {
+				return result, err
+			}
 		} else {
 		// Int
-			result, _ = strconv.Atoi(valueToken.Value)
+			result, err = strconv.Atoi(valueToken.Value)
+			if err != nil {
+				return result, err
+			}
 		}
 	default:
 		msg := fmt.Sprintf("Cannot parse value of unknown token \"%s\" (type %s)", valueToken.Value, valueToken.Type)

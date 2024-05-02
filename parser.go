@@ -147,7 +147,8 @@ func (p *Parser) parseObject() (map[string]any, error) {
 		}
 	}
 
-	return result, nil
+	msg := fmt.Sprintf("Expected end of JSON \"%s\", found end of string instead", JSON_SYNTAX_RIGHT_BRACE)
+	return result, errors.New(msg)
 }
 
 // TODO

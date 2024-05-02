@@ -48,6 +48,10 @@ func main() {
 
 	// Parse
 	jsonResult, err := ParseJson(strData)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
 
 	// Loop over JSON to do stuff
 	// TODO: Figure out how to abstract casting stuff into separate client logic

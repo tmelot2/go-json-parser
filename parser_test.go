@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-
 func runParserWithStr(s string) (map[string]interface{}, error) {
 	result, err := ParseJson(s)
 	return result, err
@@ -52,6 +51,24 @@ func TestParserInvalidJson(t *testing.T) {
 	_, err = runParserWithStr(`{ a: 1 }`)
 	if err == nil {
 		t.Error("Expected parser error on missing field separator \",\", did not error")
+	}
+
+	// Test invalid object trailing comma
+	_, err = runParserWithStr(`{ "a": 1, "b": 2, }`)
+	if err == nil {
+		t.Error("Expected parser error on missing field separator \",\", did not error")
+	}
+
+	// Test invalid array trailing comma
+	_, err = runParserWithStr(`{ "a": [1,2,] }`)
+	if err == nil {
+		t.Error("Expected parser error on trailing array comma")
+	}
+
+	// Test invalid array trailing commaa
+	_, err = runParserWithStr(`{ "a": [1,2,,] }`)
+	if err == nil {
+		t.Error("Expected parser error on multiple trailing array commas")
 	}
 }
 

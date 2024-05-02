@@ -43,7 +43,7 @@ func ParseJson(fileData string) (map[string]any, error) {
 	parser := newParser(tokens)
 	jsonResult, parseErr := parser.parse()
 	if parseErr != nil {
-		msg := fmt.Sprintf("Parser error: %s\n", parseErr)
+		msg := fmt.Sprintln(parseErr)
 		return nil, errors.New(msg)
 	}
 
@@ -125,7 +125,7 @@ func (p *Parser) parseObject() (map[string]any, error) {
 		valueToken := p.getNextToken()
 		parsedValue, valueErr := p.parseValue(valueToken)
 		if valueErr != nil {
-			msg := fmt.Sprintf("Error: %s", valueErr)
+			msg := fmt.Sprint(valueErr)
 			return result, errors.New(msg)
 		}
 		if parsedValue != nil {
@@ -138,6 +138,12 @@ func (p *Parser) parseObject() (map[string]any, error) {
 		switch nextToken.Type {
 		case JsonFieldSeparator:
 			keyToken = p.getNextToken()
+			// Error on trailing comma with no next key-value pair
+			if keyToken.Type != JsonString {
+				msg := fmt.Sprintf("Expected key string, found \"%s\" instead", keyToken.Value)
+				err := errors.New(msg)
+				return result, err
+			}
 		case JsonObjectEnd:
 			return result, nil
 		default:
@@ -160,7 +166,7 @@ func (p *Parser) parseArray() ([]any, error) {
 	for itemToken != nil {
 		value, err := p.parseValue(itemToken)
 		if err != nil {
-			msg := fmt.Sprintf("Error: %s", err)
+			msg := fmt.Sprint(err)
 			return result, errors.New(msg)
 		}
 		// Add to result
@@ -218,6 +224,9 @@ func (p *Parser) parseValue(valueToken *Token) (any, error) {
 		// Int
 			result, _ = strconv.Atoi(valueToken.Value)
 		}
+	default:
+		msg := fmt.Sprintf("Cannot parse value of unknown token \"%s\" (type %s)", valueToken.Value, valueToken.Type)
+		return result, errors.New(msg)
 	}
 
 	return result, nil

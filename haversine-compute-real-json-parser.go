@@ -83,6 +83,25 @@ func main() {
 	s, sErr := j.GetString("a")
 	fmt.Println(s, sErr)
 
-	i, iErr := j.GetInt("d")
+	i, iErr := j.GetInt("b")
 	fmt.Println(i, iErr)
+
+	f, fErr := j.GetFloat("c")
+	fmt.Println(f, fErr)
+
+	o, oErr := j.GetObject("d")
+	fmt.Println(o, oErr)
+	fmt.Println(o.GetString("d1"))
+	fmt.Println(o.GetInt("d2"))
+	fmt.Println(o.GetFloat("d3"))
+
+	a, _ := j.GetArray("e")
+	for _, aVal := range a {
+		fmt.Println(aVal)
+		fmt.Println(aVal.GetObject(""))
+		z, _ := aVal.GetArray("")
+		for _, zVal := range z {
+			fmt.Println(zVal.GetInt(""))
+		}
+	}
 }

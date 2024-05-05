@@ -54,54 +54,58 @@ func main() {
 	}
 
 	// Loop over JSON to do stuff
-	// TODO: Figure out how to abstract casting stuff into separate client logic
-	// fmt.Println("===============================")
-	// points, ok := jsonResult["pairs"].([]any)
-	// if !ok {
-	// 	fmt.Println("Error casting pairs array")
-	// 	return
-	// }
-
-	// // Compute Haversine sum & average
-	// haversineSum := 0.0
-	// for _, p := range points {
-	// 	point, ok2 := p.(map[string]any)
-	// 	if !ok2 {
-	// 		fmt.Println("Error casting point to map")
-	// 		continue
-	// 	}
-	// 	x0 := point["x0"].(float64)
-	// 	y0 := point["y0"].(float64)
-	// 	x1 := point["x1"].(float64)
-	// 	y1 := point["y1"].(float64)
-	// 	haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
-	// }
-	// avg := haversineSum / float64(len(points))
-	// fmt.Printf("Count: %d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", len(points), haversineSum, avg)
-
-	j := NewJsonValue(jsonResult)
-	s, sErr := j.GetString("a")
-	fmt.Println(s, sErr)
-
-	i, iErr := j.GetInt("b")
-	fmt.Println(i, iErr)
-
-	f, fErr := j.GetFloat("c")
-	fmt.Println(f, fErr)
-
-	o, oErr := j.GetObject("d")
-	fmt.Println(o, oErr)
-	fmt.Println(o.GetString("d1"))
-	fmt.Println(o.GetInt("d2"))
-	fmt.Println(o.GetFloat("d3"))
-
-	a, _ := j.GetArray("e")
-	for _, aVal := range a {
-		fmt.Println(aVal)
-		fmt.Println(aVal.GetObject(""))
-		z, _ := aVal.GetArray("")
-		for _, zVal := range z {
-			fmt.Println(zVal.GetInt(""))
-		}
+	fmt.Println("===============================")
+	haversineSum := 0.0
+	pairs, _ := jsonResult.GetArray("pairs")
+	for _, p := range pairs {
+		x0, _ := p.GetFloat("x0")
+		y0, _ := p.GetFloat("y0")
+		x1, _ := p.GetFloat("x1")
+		y1, _ := p.GetFloat("y1")
+		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
 	}
+	avg := haversineSum / float64(len(pairs))
+	fmt.Printf("Count: %d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", len(pairs), haversineSum, avg)
+
+	// JsonValue tests
+	//
+	// JSON i was testing stuff with
+	// {
+	// 	"a": "b",
+	// 	"b": 1,
+	// 	"c": 2.222,
+	// 	"d": {
+	// 		"d1": "d",
+	// 		"d2": 1,
+	// 		"d3": 2.222
+	// 	},
+	// 	"e": [
+	// 		[1,2]
+	// 	]
+	// }
+	// j := NewJsonValue(jsonResult)
+	// s, sErr := j.GetString("a")
+	// fmt.Println(s, sErr)
+
+	// i, iErr := j.GetInt("b")
+	// fmt.Println(i, iErr)
+
+	// f, fErr := j.GetFloat("c")
+	// fmt.Println(f, fErr)
+
+	// o, oErr := j.GetObject("d")
+	// fmt.Println(o, oErr)
+	// fmt.Println(o.GetString("d1"))
+	// fmt.Println(o.GetInt("d2"))
+	// fmt.Println(o.GetFloat("d3"))
+
+	// a, _ := j.GetArray("e")
+	// for _, aVal := range a {
+	// 	fmt.Println(aVal)
+	// 	fmt.Println(aVal.GetObject(""))
+	// 	z, _ := aVal.GetArray("")
+	// 	for _, zVal := range z {
+	// 		fmt.Println(zVal.GetInt(""))
+	// 	}
+	// }
 }

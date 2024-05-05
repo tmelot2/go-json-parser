@@ -30,7 +30,7 @@ import (
 
 
 // Parses the given string & returns result.
-func ParseJson(fileData string) (map[string]any, error) {
+func ParseJson(fileData string) (*JsonValue, error) {
 	// Lex into tokens
 	lexer := newLexer(fileData)
 	tokens, err := lexer.lex()
@@ -47,7 +47,7 @@ func ParseJson(fileData string) (map[string]any, error) {
 		return nil, errors.New(msg)
 	}
 
-	return jsonResult, nil
+	return &JsonValue{jsonResult}, nil
 }
 
 type Parser struct {

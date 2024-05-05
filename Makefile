@@ -11,5 +11,5 @@ generate:
 
 run:
 	go run haversine-compute-real-json-parser.go \
-		lexer.go parser.go \
+		lexer.go parser.go jsonValue.go \
 		haversine.go

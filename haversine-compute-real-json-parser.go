@@ -55,27 +55,34 @@ func main() {
 
 	// Loop over JSON to do stuff
 	// TODO: Figure out how to abstract casting stuff into separate client logic
-	fmt.Println("===============================")
-	points, ok := jsonResult["pairs"].([]any)
-	if !ok {
-		fmt.Println("Error casting pairs array")
-		return
-	}
+	// fmt.Println("===============================")
+	// points, ok := jsonResult["pairs"].([]any)
+	// if !ok {
+	// 	fmt.Println("Error casting pairs array")
+	// 	return
+	// }
 
-	// Compute Haversine sum & average
-	haversineSum := 0.0
-	for _, p := range points {
-		point, ok2 := p.(map[string]any)
-		if !ok2 {
-			fmt.Println("Error casting point to map")
-			continue
-		}
-		x0 := point["x0"].(float64)
-		y0 := point["y0"].(float64)
-		x1 := point["x1"].(float64)
-		y1 := point["y1"].(float64)
-		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
-	}
-	avg := haversineSum / float64(len(points))
-	fmt.Printf("Count: %d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", len(points), haversineSum, avg)
+	// // Compute Haversine sum & average
+	// haversineSum := 0.0
+	// for _, p := range points {
+	// 	point, ok2 := p.(map[string]any)
+	// 	if !ok2 {
+	// 		fmt.Println("Error casting point to map")
+	// 		continue
+	// 	}
+	// 	x0 := point["x0"].(float64)
+	// 	y0 := point["y0"].(float64)
+	// 	x1 := point["x1"].(float64)
+	// 	y1 := point["y1"].(float64)
+	// 	haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
+	// }
+	// avg := haversineSum / float64(len(points))
+	// fmt.Printf("Count: %d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", len(points), haversineSum, avg)
+
+	j := NewJsonValue(jsonResult)
+	s, sErr := j.GetString("a")
+	fmt.Println(s, sErr)
+
+	i, iErr := j.GetInt("d")
+	fmt.Println(i, iErr)
 }

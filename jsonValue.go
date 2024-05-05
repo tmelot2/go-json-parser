@@ -5,7 +5,46 @@ import (
 	"fmt"
 )
 
-// TODO: Doc all this stuff mang
+/*
+	JsonValue is returned by the JSON parser & is used to access items within the parsed result.
+
+	Call `GetType("key")` to get values for keys, & `GetType("")` (with blank str arg) to get values
+	when there is no key (for example in an array access).
+
+	Example JSON:
+	```
+	{
+		"theString": "a",
+		"theInt": 1,
+		"theFloat": 2.222,
+		"theObj": {
+			"objA": "b",
+			"objB": 1,
+			"objC": 2.222
+		},
+		"theArray": [
+			[1,2]
+		]
+	}
+	```
+
+	To get data out after parsing:
+	```
+	jsonResult.GetString("theString") 	// Gets "a"
+	jsonResult.GetInt("theInt") 		// Gets 1
+	jsonResult.GetFloat("theFloat") 	// Gets 2.222
+
+	theObj := jsonResult.GetObject("theObj") // Gets theObj as a JsonValue
+	theObj.GetString("objA")			 	 // Gets "b"
+	theObj.GetInt("objB")			 	 	 // Gets 1
+	theObj.GetFloat("objC")			 	 	 // Gets 2.222
+
+	theArray := jsonResult.GetArray("theArray") // Gets theArray as a slice of JsonValue
+	for _, item := range theArray {
+		v, _ := item.GetInt("")					// Gets 1, then 2
+	}
+	```
+*/
 
 type JsonValue struct {
 	data any

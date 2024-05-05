@@ -2,7 +2,7 @@
 
 test:
 	go test -v \
-		lexer.go parser.go \
+		lexer.go parser.go jsonValue.go \
 		*_test.go
 
 DEFAULT_PAIRS := 3

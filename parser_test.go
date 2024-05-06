@@ -94,49 +94,49 @@ func TestParserValidJson(t *testing.T) {
 		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
 	}
 
-	////////////////////////////////////////////÷
-	// TODO: Adapt tests to use JsonValue
-	////////////////////////////////////////////÷
+	// Test valid JSON with multiple ints
+	result, _ = runParserWithStr(`{ "a": 1, "b": 2 }`)
+	resultAInt, _ := result.GetInt("a")
+	resultBInt, _ := result.GetInt("b")
+	if resultAInt != 1 || resultBInt != 2 {
+		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
+	}
 
-	// // Test valid JSON with multiple ints
-	// result, _ = runParserWithStr(`{ "a": 1, "b": 2 }`)
-	// if result["a"] != 1 || result["b"] != 2 {
-	// 	t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	// }
+	// Test valid JSON with one float
+	result, _ = runParserWithStr(`{ "a": 1.11 }`)
+	if resultFloat, _ := result.GetFloat("a"); resultFloat != 1.11 {
+		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
+	}
 
-	// // Test valid JSON with one float
-	// result, _ = runParserWithStr(`{ "a": 1.11 }`)
-	// if result["a"] != 1.11 {
-	// 	t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	// }
+	// Test valid JSON with multiple floats
+	result, _ = runParserWithStr(`{ "a": 1.11, "b": 2.22 }`)
+	resultMultiFloatA, _ := result.GetFloat("a")
+	resultMultiFloatB, _ := result.GetFloat("b")
+	if resultMultiFloatA != 1.11 || resultMultiFloatB != 2.22 {
+		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
+	}
 
-	// // Test valid JSON with multiple floats
-	// result, _ = runParserWithStr(`{ "a": 1.11, "b": 2.22 }`)
-	// if result["a"] != 1.11 || result["b"] != 2.22 {
-	// 	t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	// }
+	// Test valid JSON with nested object
+	// TODO: Hopefully this casting can be improved in a future design
+	result, _ = runParserWithStr(`{ "a": { "b": { "c": 1 } } }`)
+	objA, _ := result.GetObject("a")
+	objB, _ := objA.GetObject("b")
+	c, _ := objB.GetInt("c")
+	if c != 1 {
+		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
+	}
 
-	// // Test valid JSON with nested object
-	// // TODO: Hopefully this casting can be improved in a future design
-	// result, _ = runParserWithStr(`{ "a": { "b": { "c": 1 } } }`)
-	// a := result["a"].(map[string]any)
-	// b := a["b"].(map[string]any)
-	// c := b["c"].(int)
-	// if c != 1 {
-	// 	t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	// }
-
-	// // Test valid JSON with array
-	// result, _ = runParserWithStr(`{
-	// 	"best_games": [
-	// 		{ "rank": 1, "name": "Noita" },
-	// 		{ "rank": 2, "name": "Smash Bros" }
-	// 	]
-	// }`)
-	// arr := result["best_games"].([]any)
-	// noita := arr[0].(map[string]any)
-	// smash := arr[1].(map[string]any)
-	// if noita["rank"] != 1 || smash["rank"] != 2 {
-	// 	t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	// }
+	// Test valid JSON with array
+	result, _ = runParserWithStr(`{
+		"best_games": [
+			{ "rank": 1, "name": "Noita" },
+			{ "rank": 2, "name": "Smash Bros" }
+		]
+	}`)
+	arr, _ := result.GetArray("best_games")
+	noita, _ := arr[0].GetInt("rank")
+	smash, _ := arr[1].GetInt("rank")
+	if noita != 1 || smash != 2 {
+		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
+	}
 }

@@ -1,3 +1,5 @@
+// +build scanner
+
 /*
 	Does not parse JSON, instead it scans each JSON line & picks out the points.
 

@@ -33,6 +33,8 @@ var DEBUG = false
 func main() {
 	const EARTH_RADIUS = 6372.8
 
+	PrintTimerStats()
+
 	// Get input args
 	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
 	flag.Parse()

@@ -117,7 +117,6 @@ func TestParserValidJson(t *testing.T) {
 	}
 
 	// Test valid JSON with nested object
-	// TODO: Hopefully this casting can be improved in a future design
 	result, _ = runParserWithStr(`{ "a": { "b": { "c": 1 } } }`)
 	objA, _ := result.GetObject("a")
 	objB, _ := objA.GetObject("b")

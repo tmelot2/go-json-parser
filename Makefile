@@ -1,5 +1,13 @@
 .PHONY: run test
 
+setup:
+	go get golang.org/x/text/language
+	go get golang.org/x/text/message
+	go get golang.org/x/sys/unix
+
+build:
+	go build -x .
+
 test:
 	go test -v \
 		lexer.go parser.go jsonValue.go \

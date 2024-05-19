@@ -6,12 +6,12 @@ import (
 	"golang.org/x/text/message"
 	"golang.org/x/sys/unix"
 	"strconv"
-	"time"
+	// "time"
 )
 
 // Returns CPU timer value, function implementation is in assembly.
 // TOODO: Only ARM64 is currently supported, add X64
-func readCpuTimer() int64
+func ReadCpuTimer() int64
 
 // GetOSTimerFreq returns the frequency of the OS timer.
 func GetOSTimerFreq() (int64, error) {
@@ -31,32 +31,41 @@ func ReadOSTimer() (int64, error) {
 }
 
 func PrintTimerStats() {
-	width := 20
+	width := 24
 
 	p := message.NewPrinter(language.English)
-	freq, err := GetOSTimerFreq()
+	osFreq, err := GetOSTimerFreq()
 	if err != nil {
 		fmt.Println("Error getting OS timer frequency:", err)
 		return
 	}
+	p.Printf("OS Timer Frequency (nanoseconds per second): %*d\n", width, osFreq)
 
-	timerValue, err := ReadOSTimer()
-	if err != nil {
-		fmt.Println("Error reading OS timer:", err)
-		return
+	cpuStart   := ReadCpuTimer()
+	osStart, _ := ReadOSTimer()
+
+	var osEnd int64
+	var osElapsed int64
+	i := 0
+	for osElapsed < osFreq {
+		osEnd, _ = ReadOSTimer()
+		osElapsed = osEnd - osStart
+		// fmt.Println(osEnd, "-", osStart, "=", osElapsed, ",", i)
+		i +=1
 	}
+	cpuEnd := ReadCpuTimer()
+	cpuElapsed := cpuEnd - cpuStart
 
-	start, _ := ReadOSTimer()
-	time.Sleep(time.Second*1)
-	end, _ := ReadOSTimer()
+	// p.Printf(  "OS Timer:      %*d -> %*d = %*d elapsed\n", width, osStart, width, osEnd, width, osElapsed)
+	p.Printf("OS Timer:                                    %*d elapsed\n", width, osElapsed)
+	p.Printf("OS Seconds (elapsed/freq):                        %*.4f\n", width, float64(osElapsed) / float64(osFreq))
 
-	p.Printf("OS Timer Frequency (nanoseconds per second): %*d\n", width, freq)
-	p.Printf("OS Timer Value (nanoseconds):                %*d\n", width, timerValue)
-	p.Printf("1 second sleep (nanoseconds):                %*d\n", width, end-start)
+	// p.Printf(  "CPU timer:     %*d -> %*d = %*d elapsed\n", width, cpuStart, width, cpuEnd, width, cpuElapsed)
+	p.Printf("CPU timer:                                   %*d elapsed\n", width, cpuElapsed)
  }
 
 
-// Type-ify magic strings
+// Enums, basically
 type BenchmarkType int
 const (
 	BenchmarkTypeA BenchmarkType = iota

@@ -31,37 +31,45 @@ func ReadOSTimer() (int64, error) {
 }
 
 func PrintTimerStats() {
-	width := 24
+	// Setup
+	millisecondsToWait := int64(10)
+	// TODO: Optionally get ms from input args
+	width := 24 // Output width
+	p := message.NewPrinter(language.English) // For printing large numbers with commas
 
-	p := message.NewPrinter(language.English)
 	osFreq, err := GetOSTimerFreq()
 	if err != nil {
 		fmt.Println("Error getting OS timer frequency:", err)
 		return
 	}
-	p.Printf("OS Timer Frequency (nanoseconds per second): %*d\n", width, osFreq)
+	// In nanoseconds per second
+	p.Printf("OS Timer Frequency [reported]:          %*d\n", width, osFreq)
 
 	cpuStart   := ReadCpuTimer()
 	osStart, _ := ReadOSTimer()
 
 	var osEnd int64
 	var osElapsed int64
-	i := 0
-	for osElapsed < osFreq {
+	osWaitTime := osFreq * millisecondsToWait / 1000
+	for osElapsed < osWaitTime {
 		osEnd, _ = ReadOSTimer()
 		osElapsed = osEnd - osStart
-		// fmt.Println(osEnd, "-", osStart, "=", osElapsed, ",", i)
-		i +=1
 	}
 	cpuEnd := ReadCpuTimer()
 	cpuElapsed := cpuEnd - cpuStart
 
+	cpuFreq := int64(0)
+	if osElapsed > 0 {
+		cpuFreq = osFreq * cpuElapsed / osElapsed
+	}
+
 	// p.Printf(  "OS Timer:      %*d -> %*d = %*d elapsed\n", width, osStart, width, osEnd, width, osElapsed)
-	p.Printf("OS Timer:                                    %*d elapsed\n", width, osElapsed)
-	p.Printf("OS Seconds (elapsed/freq):                        %*.4f\n", width, float64(osElapsed) / float64(osFreq))
+	p.Printf("OS Timer:                               %*d elapsed\n", width, osElapsed)
+	p.Printf("OS Seconds (elapsed/freq):                   %*.4f\n", width, float64(osElapsed) / float64(osFreq))
 
 	// p.Printf(  "CPU timer:     %*d -> %*d = %*d elapsed\n", width, cpuStart, width, cpuEnd, width, cpuElapsed)
-	p.Printf("CPU timer:                                   %*d elapsed\n", width, cpuElapsed)
+	p.Printf("CPU timer:                              %*d elapsed\n", width, cpuElapsed)
+	p.Printf("CPU freq (guessed):                     %*d\n", width, cpuFreq)
  }
 
 

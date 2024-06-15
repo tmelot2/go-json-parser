@@ -31,6 +31,7 @@ import (
 
 // Parses the given string & returns result.
 func ParseJson(fileData string) (*JsonValue, error) {
+	globalProfiler.StartBlock("Parse")
 	// Lex into tokens
 	lexer := newLexer(fileData)
 	tokens, err := lexer.lex()
@@ -47,6 +48,7 @@ func ParseJson(fileData string) (*JsonValue, error) {
 		return nil, errors.New(msg)
 	}
 
+	globalProfiler.EndBlock("Parse")
 	return &JsonValue{jsonResult}, nil
 }
 

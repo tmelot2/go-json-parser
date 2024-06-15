@@ -39,49 +39,26 @@ var DEBUG = false
 var OUTPUT_WIDTH = 10
 var globalProfiler = newProfiler()
 
-// Main
-//
-func main() {
-	globalProfiler.BeginProfile()
-	globalProfiler.StartBlock("Startup")
-
-	// Setup
-	const EARTH_RADIUS = 6372.8
-	p := GetPrinter()
-
-	// Get input args
-	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
-	flag.Parse()
-	globalProfiler.EndBlock("Startup")
-
-
-	// Read JSON file, convert to string
+func readEntireFile(fileName string) ([]byte, error) {
 	globalProfiler.StartBlock("Read")
-	data, err := os.ReadFile(*inputFileArg)
+	data, err := os.ReadFile(fileName)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		return nil, err
 	}
 	globalProfiler.EndBlock("Read")
-	globalProfiler.StartBlock("ReadToStr")
-	strData := string(data)
-	globalProfiler.EndBlock("ReadToStr")
-	DebugPrintln(strData)
+	return data, nil
+}
 
-	// Parse
-	globalProfiler.StartBlock("Parse")
-	jsonResult, err := ParseJson(strData)
-	if err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		return
-	}
-	globalProfiler.EndBlock("Parse")
+var EARTH_RADIUS = 6372.8
 
-	// Loop over JSON to do stuff
+func haversineSum(json *JsonValue) {
+	p := GetPrinter()
+
 	globalProfiler.StartBlock("Sum")
 	fmt.Println("===============================")
 	haversineSum := 0.0
-	pairs, _ := jsonResult.GetArray("pairs")
+	pairs, _ := json.GetArray("pairs")
 	for _, p := range pairs {
 		x0, _ := p.GetFloat("x0")
 		y0, _ := p.GetFloat("y0")
@@ -95,6 +72,41 @@ func main() {
 	globalProfiler.StartBlock("MiscOutput")
 	p.Printf("Count: %*d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", 14, len(pairs), haversineSum, avg)
 	globalProfiler.EndBlock("MiscOutput")
+}
+
+// Main
+//
+func main() {
+	globalProfiler.BeginProfile()
+
+	// Get input args
+	globalProfiler.StartBlock("Startup")
+	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
+	flag.Parse()
+	globalProfiler.EndBlock("Startup")
+
+	// Read JSON file
+	data, err := readEntireFile(*inputFileArg)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// Convert to string
+	globalProfiler.StartBlock("ReadToStr")
+	strData := string(data)
+	globalProfiler.EndBlock("ReadToStr")
+	DebugPrintln(strData)
+
+	// Parse
+	jsonResult, err := ParseJson(strData)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	// Compute Haversine & print results
+	haversineSum(jsonResult)
 
 	globalProfiler.EndAndPrintProfile()
 }

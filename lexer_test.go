@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func runLexerWithStr(s string) ([]Token, error) {
 	lexer := newLexer(s)
 	// lexer.Debug = true

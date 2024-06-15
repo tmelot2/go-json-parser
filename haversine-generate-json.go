@@ -1,3 +1,5 @@
+// +build jsongenerator
+
 /*
 	Generates Haversine points JSON data file. Also computes Haversine & prints reference answer.
 */
@@ -45,9 +47,15 @@ func referenceHaversine(x0, y0, x1, y1, radius float64) float64 {
 	return result
 }
 
-func getRandomPoint(centerX, centerY float64) (float64, float64) {
-	x := centerX + X_MIN + (X_MAX - X_MIN) * rand.Float64()
-	y := centerY + Y_MIN + (Y_MAX - Y_MIN) * rand.Float64()
+func getRandomPoint(centerX, centerY, percent float64) (float64, float64) {
+	xMin := percent * X_MIN
+	xMax := percent * X_MAX
+	percent2 := percent*0.5
+	yMin := percent2 * Y_MIN
+	yMax := percent2 * Y_MAX
+
+	x := centerX + xMin + (xMax - xMin) * rand.Float64()
+	y := centerY + yMin + (yMax - yMin) * rand.Float64()
 
 	// Cap x
 	if x < X_MIN {
@@ -106,15 +114,17 @@ func main() {
 
 	fmt.Fprintf(file, "{\"pairs\":[\n")
 
+	percent := rand.Float64()
 	for i := 0; i < pairs; i++ {
 		clusterCountLeft -= 1
 		if clusterCountLeft == 0 {
 			clusterCountLeft = CLUSTER_SIZE
-			centerX, centerY = getRandomPoint(0,0)
+			centerX, centerY = getRandomPoint(0,0,1)
+			percent = rand.Float64()
 		}
 
-		x0,y0 := getRandomPoint(centerX, centerY)
-		x1,y1 := getRandomPoint(centerX, centerY)
+		x0,y0 := getRandomPoint(centerX, centerY, percent)
+		x1,y1 := getRandomPoint(centerX, centerY, percent)
 		newItem := createJsonItem(x0, y0, x1, y1)
 		haversineDistance := referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
 		haversineSum += haversineDistance

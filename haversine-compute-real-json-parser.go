@@ -1,3 +1,5 @@
+// +build realjsonparser
+
 /*
 	Uses real JSON parsing library that I am writing.
 */
@@ -10,6 +12,10 @@ import (
 	"os"
 	// "strings"
 	// "strconv"
+	// "time"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 
@@ -25,67 +31,82 @@ func DebugPrintln(a ...interface{}) {
 	}
 }
 
-var DEBUG = false
+func GetPrinter() *message.Printer {
+	return message.NewPrinter(language.English) // For printing large numbers with commas
+}
 
+var DEBUG = false
+var OUTPUT_WIDTH = 10
+var globalProfiler = newProfiler()
+
+func readEntireFile(fileName string) ([]byte, error) {
+	globalProfiler.StartBlock("Read")
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+	globalProfiler.EndBlock("Read")
+	return data, nil
+}
+
+var EARTH_RADIUS = 6372.8
+
+func haversineSum(json *JsonValue) {
+	p := GetPrinter()
+
+	globalProfiler.StartBlock("Sum")
+	fmt.Println("===============================")
+	haversineSum := 0.0
+	pairs, _ := json.GetArray("pairs")
+	for _, p := range pairs {
+		x0, _ := p.GetFloat("x0")
+		y0, _ := p.GetFloat("y0")
+		x1, _ := p.GetFloat("x1")
+		y1, _ := p.GetFloat("y1")
+		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
+	}
+	avg := haversineSum / float64(len(pairs))
+	globalProfiler.EndBlock("Sum")
+
+	globalProfiler.StartBlock("MiscOutput")
+	p.Printf("Count: %*d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", 14, len(pairs), haversineSum, avg)
+	globalProfiler.EndBlock("MiscOutput")
+}
 
 // Main
 //
 func main() {
-	const EARTH_RADIUS = 6372.8
+	globalProfiler.BeginProfile()
 
 	// Get input args
+	globalProfiler.StartBlock("Startup")
 	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
 	flag.Parse()
+	globalProfiler.EndBlock("Startup")
 
-	// Read JSON file, convert to string
-	data, err := os.ReadFile(*inputFileArg)
+	// Read JSON file
+	data, err := readEntireFile(*inputFileArg)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
+
+	// Convert to string
+	globalProfiler.StartBlock("ReadToStr")
 	strData := string(data)
+	globalProfiler.EndBlock("ReadToStr")
 	DebugPrintln(strData)
 
-	// TODO: Combine lexer & parser into one function call
-
-	// Lex JSON
-	lexer := newLexer(strData)
-	lexer.Debug = DEBUG
-	lexedTokens, err := lexer.lex()
+	// Parse
+	jsonResult, err := ParseJson(strData)
 	if err != nil {
-		fmt.Printf("Lexer error: %s\n", err)
-	}
-
-	// Parse JSON
-	parser := newParser(lexedTokens)
-	jsonResult, err := parser.Parse()
-	if err != nil {
-		fmt.Println("Parser error:", err)
-	}
-	// fmt.Println("Parser result:", jsonResult)
-
-	// Loop over JSON to do stuff
-	// TODO: Figure out how to abstract casting stuff into separate client logic
-	fmt.Println("===============================")
-	points, ok := jsonResult["pairs"].([]any)
-	if !ok {
-		fmt.Println("Error casting pairs array")
+		fmt.Println("Error parsing JSON:", err)
 		return
 	}
 
-	haversineSum := 0.0
-	for _, p := range points {
-		point, ok2 := p.(map[string]any)
-		if !ok2 {
-			fmt.Println("Error casting point to map")
-			continue
-		}
-		x0 := point["x0"].(float64)
-		y0 := point["y0"].(float64)
-		x1 := point["x1"].(float64)
-		y1 := point["y1"].(float64)
-		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
-	}
-	avg := haversineSum / float64(len(points))
-	fmt.Printf("Count: %d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", len(points), haversineSum, avg)
+	// Compute Haversine & print results
+	haversineSum(jsonResult)
+
+	globalProfiler.EndAndPrintProfile()
 }

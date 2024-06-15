@@ -1,3 +1,5 @@
+// +build stlparser
+
 /*
 	Parses JSON using the standard library. It works, & was helpful for	learning, but for
 	the performance-aware programming course I need to be able to see inside & modify

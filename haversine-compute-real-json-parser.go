@@ -1,3 +1,5 @@
+// +build realjsonparser
+
 /*
 	Uses real JSON parsing library that I am writing.
 */

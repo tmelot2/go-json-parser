@@ -7,8 +7,7 @@ import (
 )
 
 // Declare asm functions that return CPU timer values.
-// TODO: Only ARM64 is currently supported, add X64.
-// Also, the ARM impl uses CNTVCT which returns a 24MHz timer on MacOS Sonoma.
+// The ARM impl uses CNTVCT which returns a 24MHz timer on MacOS Sonoma.
 // Without a cycle counter from the CPU & OS, the 24Mhz doesn't really help us.
 func ReadCPUTimer() int64
 

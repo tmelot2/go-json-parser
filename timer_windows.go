@@ -72,7 +72,7 @@ func ReadOSTimer() (uint64, error) {
 // Prints read, measurement, & guess of CPU frequency & related data.
 func EstimateCPUTimerFreq(printDebug bool) uint64 {
 	// Setup
-	millisecondsToWait := uint64(10)
+	millisecondsToWait := uint64(100)
 	width := 20 // Output width
 	p := message.NewPrinter(language.English) // For printing large numbers with commas
 

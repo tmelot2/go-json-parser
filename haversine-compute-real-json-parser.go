@@ -43,7 +43,7 @@ var OUTPUT_WIDTH = 10
 //
 func main() {
 	prof := newProfiler()
-	prof.Start("Startup")
+	prof.StartBlock("Startup")
 
 	// Setup
 	const EARTH_RADIUS = 6372.8
@@ -52,33 +52,33 @@ func main() {
 	// Get input args
 	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
 	flag.Parse()
-	prof.End("Startup")
+	prof.EndBlock("Startup")
 
 
 	// Read JSON file, convert to string
-	prof.Start("Read")
+	prof.StartBlock("Read")
 	data, err := os.ReadFile(*inputFileArg)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-	prof.End("Read")
-	prof.Start("ReadToStr")
+	prof.EndBlock("Read")
+	prof.StartBlock("ReadToStr")
 	strData := string(data)
-	prof.End("ReadToStr")
+	prof.EndBlock("ReadToStr")
 	DebugPrintln(strData)
 
 	// Parse
-	prof.Start("Parse")
+	prof.StartBlock("Parse")
 	jsonResult, err := ParseJson(strData)
 	if err != nil {
 		fmt.Println("Error parsing JSON:", err)
 		return
 	}
-	prof.End("Parse")
+	prof.EndBlock("Parse")
 
 	// Loop over JSON to do stuff
-	prof.Start("Sum")
+	prof.StartBlock("Sum")
 	fmt.Println("===============================")
 	haversineSum := 0.0
 	pairs, _ := jsonResult.GetArray("pairs")
@@ -90,11 +90,11 @@ func main() {
 		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
 	}
 	avg := haversineSum / float64(len(pairs))
-	prof.End("Sum")
+	prof.EndBlock("Sum")
 
-	prof.Start("MiscOutput")
+	prof.StartBlock("MiscOutput")
 	p.Printf("Count: %*d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", 14, len(pairs), haversineSum, avg)
-	prof.End("MiscOutput")
+	prof.EndBlock("MiscOutput")
 
 	prof.Print()
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type TSC struct {
@@ -28,16 +29,11 @@ func newProfiler() *Profiler {
 
 // Starts a new time stamp counter for the given block name.
 // NOTE: WILL ERASE existing data for the given block.
-func (p *Profiler) Start(name string) {
-	// Add to ordering
-	found := false
-	for _, o := range p.order {
-		if o == name {
-			found = true
-			break
-		}
-	}
-	if !found {
+func (p *Profiler) StartBlock(name string) {
+	// Add to ordering. It uses same names as TSCs, so check with a hash lookup instead of
+	// an array scan.
+	_, ok := p.tscs[name]
+	if !ok {
 		p.order = append(p.order, name)
 	}
 
@@ -49,7 +45,7 @@ func (p *Profiler) Start(name string) {
 }
 
 // Ends a time stamp counter & accumulates its total duration.
-func (p *Profiler) End(name string) {
+func (p *Profiler) EndBlock(name string) {
 	endTSC := ReadCPUTimer()
 
 	// Ignore if TSC block name does not exist
@@ -95,12 +91,17 @@ func (p *Profiler) Print() {
 
 	// Print block profiles
 	for _, blockName := range p.order {
-		p.PrintBlockTimeElapsed(blockName, p.totals[blockName], totalCycles)
+		p.printBlockTimeElapsed(blockName, p.totals[blockName], totalCycles)
 	}
+
+	fmt.Println(strings.Repeat("=", 50))
+
+	// Print total
+	p.printBlockTimeElapsed("Total", totalCycles, totalCycles)
 }
 
 // Returns len of longest block name string. Used for print formatting.
-func (p *Profiler) GetLongestBlockNameLen() int {
+func (p *Profiler) getLongestBlockNameLen() int {
 	longest := 0
 	for _,b := range p.order {
 		if len(b) > longest {
@@ -111,10 +112,10 @@ func (p *Profiler) GetLongestBlockNameLen() int {
 }
 
 // Prints profiling information for the given block data.
-func (p *Profiler) PrintBlockTimeElapsed(label string, durationCycles, totalCycles uint64) {
+func (p *Profiler) printBlockTimeElapsed(label string, durationCycles, totalCycles uint64) {
 	printer := GetPrinter()
 	durationCyclesStr := printer.Sprintf("%*d", 20, durationCycles)
-	longestBlockNameLen := p.GetLongestBlockNameLen() + 1
+	longestBlockNameLen := p.getLongestBlockNameLen() + 1
 	percent := float64(100.0 * (float64(durationCycles) / float64(totalCycles)))
 
 	printer.Printf("  %*s: %14s (%.2f%%)\n", longestBlockNameLen, label, durationCyclesStr, percent)

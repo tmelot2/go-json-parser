@@ -70,22 +70,22 @@ func ReadOSTimer() (int64, error) {
 }
 
 // Prints read, measurement, & guess of CPU frequency & related data.
-func PrintTimerStats() {
-	fmt.Println("[CPU timer stats]")
-
+func EstimateCPUTimerFreq(printDebug bool) uint64 {
 	// Setup
 	millisecondsToWait := int64(10)
-	width := 16 // Output width
+	width := 20 // Output width
 	p := message.NewPrinter(language.English) // For printing large numbers with commas
 
 	// Get OS timer frequency
 	osFreq, err := GetOSTimerFreq()
 	if err != nil {
 		fmt.Println("Error getting OS timer frequency:", err)
-		return
+		return 0
 	}
 	// In nanoseconds per second
-	p.Printf("OS Timer Frequency [reported]:          %*d\n", width, osFreq)
+	if printDebug {
+		p.Printf("OS Timer Frequency [reported]: %*d\n", width, osFreq)
+	}
 
 	cpuStart   := ReadCpuTimerStart()
 	osStart, _ := ReadOSTimer()
@@ -105,12 +105,13 @@ func PrintTimerStats() {
 		cpuFreq = osFreq * cpuElapsed / osElapsed
 	}
 
-	// p.Printf(  "OS Timer:      %*d -> %*d = %*d elapsed\n", width, osStart, width, osEnd, width, osElapsed)
-	p.Printf("OS Timer:                               %*d elapsed\n", width, osElapsed)
-	p.Printf("OS Seconds (elapsed/freq):                   %*.4f\n", width, float64(osElapsed) / float64(osFreq))
+	if printDebug {
+		p.Printf("OS Timer:                      %*d elapsed\n", width, osElapsed)
+		p.Printf("OS Seconds (elapsed/freq):          %*.4f\n", width, float64(osElapsed) / float64(osFreq))
 
-	// p.Printf(  "CPU timer:     %*d -> %*d = %*d elapsed\n", width, cpuStart, width, cpuEnd, width, cpuElapsed)
-	p.Printf("CPU timer:                              %*d elapsed\n", width, cpuElapsed)
-	p.Printf("CPU freq (guessed):                     %*d\n", width, cpuFreq)
+		p.Printf("CPU timer:                     %*d elapsed\n", width, cpuElapsed)
+		p.Printf("CPU freq (guessed):            %*d\n", width, cpuFreq)
+	}
 
+	return uint64(cpuFreq)
 }

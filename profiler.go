@@ -50,14 +50,16 @@ func (p *Profiler) Start(name string) {
 
 // Ends a time stamp counter & accumulates its total duration.
 func (p *Profiler) End(name string) {
+	endTSC := ReadCPUTimer()
+
 	// Ignore if TSC block name does not exist
 	tscVal, ok := p.tscs[name]
 	if !ok {
-		fmt.Printf("profiler.end(): Block %s does not exist, ignoring\n", name)
 		return
 	}
 
-	tscVal.end = ReadCPUTimer()
+	// Set end TSC
+	tscVal.end = endTSC
 	p.tscs[name] = tscVal
 
 	// Add sum for block if it doesn't exist
@@ -71,7 +73,6 @@ func (p *Profiler) End(name string) {
 	if tscVal.start != 0 && tscVal.end != 0 {
 		// TODO: Check that end > start
 		duration := tscVal.end - tscVal.start
-		fmt.Printf("profiler.end(): block %s, adding sum, current = %d, duration = %d, new = %d\n", name, totalVal, duration, totalVal+duration)
 		totalVal += duration
 		p.totals[name] = totalVal
 	}

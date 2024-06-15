@@ -8,7 +8,7 @@
 // NOSPLIT means "do not insert stack-split preamble", we do not need stack
 // $0 is the stack size needed
 // 8 is the size of arguments+return values. Can be addressed using FP
-TEXT ·ReadCpuTimer(SB),NOSPLIT,$0-8
+TEXT ·ReadCPUTimer(SB),NOSPLIT,$0-8
 	ISB $1
 	MRS CNTVCT_EL0, R0
 

@@ -33,11 +33,25 @@ var DEBUG = false
 // Main
 //
 func main() {
+	// Profiling vars
+	var (
+		prof_begin      = uint64(0)
+		// prof_read       = uint64(0)
+		// prof_miscSetup  = uint64(0)
+		// prof_parse      = uint64(0)
+		// prof_sum        = uint64(0)
+		// prof_miscOutput = uint64(0)
+		// prof_end        = uint64(0)
+	)
+
+	prof_begin = ReadCPUTimer()
+	fmt.Println(prof_begin)
+
 	const EARTH_RADIUS = 6372.8
 
 	cpuFreq := EstimateCPUTimerFreq(true)
 	fmt.Println("CPU freq:", cpuFreq)
-	fmt.Println("\n\n")
+	fmt.Println("")
 
 	// Get input args
 	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")

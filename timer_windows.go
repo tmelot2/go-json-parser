@@ -13,8 +13,7 @@ import (
 )
 
 // Declare asm functions that return CPU timer values.
-func ReadCpuTimerStart() int64
-func ReadCpuTimerEnd()   int64
+func ReadCPUTimer()      uint64
 
 // Declare syscalls for getting QueryPerformanceCounter
 var (
@@ -24,8 +23,9 @@ var (
 )
 
 // Returns result of syscall QueryPerformanceFrequency()
-func GetOSTimerFreq() (int64, error) {
-	var freq int64
+// Returns 10,000,000 on my amd64 Windows machine
+func GetOSTimerFreq() (uint64, error) {
+	var freq uint64
 	var err error
 	r1, _, e1 := syscall.Syscall(
 		procQueryPerformanceFrequency.Addr(),
@@ -47,8 +47,8 @@ func GetOSTimerFreq() (int64, error) {
 }
 
 // Returns result of syscall QueryPerformanceCounter()
-func ReadOSTimer() (int64, error) {
-	var osTimer int64
+func ReadOSTimer() (uint64, error) {
+	var osTimer uint64
 	var err error
 	r1, _, e1 := syscall.Syscall(
 		procQueryPerformanceCounter.Addr(),
@@ -72,7 +72,7 @@ func ReadOSTimer() (int64, error) {
 // Prints read, measurement, & guess of CPU frequency & related data.
 func EstimateCPUTimerFreq(printDebug bool) uint64 {
 	// Setup
-	millisecondsToWait := int64(10)
+	millisecondsToWait := uint64(10)
 	width := 20 // Output width
 	p := message.NewPrinter(language.English) // For printing large numbers with commas
 
@@ -87,20 +87,20 @@ func EstimateCPUTimerFreq(printDebug bool) uint64 {
 		p.Printf("OS Timer Frequency [reported]: %*d\n", width, osFreq)
 	}
 
-	cpuStart   := ReadCpuTimerStart()
+	cpuStart   := ReadCPUTimer()
 	osStart, _ := ReadOSTimer()
 
-	var osEnd int64
-	var osElapsed int64
+	var osEnd uint64
+	var osElapsed uint64
 	osWaitTime := osFreq * millisecondsToWait / 1000
 	for osElapsed < osWaitTime {
 		osEnd, _ = ReadOSTimer()
 		osElapsed = osEnd - osStart
 	}
-	cpuEnd := ReadCpuTimerEnd()
+	cpuEnd := ReadCPUTimer()
 	cpuElapsed := cpuEnd - cpuStart
 
-	cpuFreq := int64(0)
+	cpuFreq := uint64(0)
 	if osElapsed > 0 {
 		cpuFreq = osFreq * cpuElapsed / osElapsed
 	}

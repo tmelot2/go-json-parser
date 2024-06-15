@@ -10,7 +10,7 @@ import (
 // TODO: Only ARM64 is currently supported, add X64.
 // Also, the ARM impl uses CNTVCT which returns a 24MHz timer on MacOS Sonoma.
 // Without a cycle counter from the CPU & OS, the 24Mhz doesn't really help us.
-func ReadCpuTimer() int64
+func ReadCPUTimer() int64
 
 // GetOSTimerFreq returns the frequency of the OS timer.
 func GetOSTimerFreq() (int64, error) {
@@ -44,7 +44,7 @@ func PrintTimerStats() {
 	// In nanoseconds per second
 	p.Printf("OS Timer Frequency [reported]:          %*d\n", width, osFreq)
 
-	cpuStart   := ReadCpuTimer()
+	cpuStart   := ReadCPUTimer()
 	osStart, _ := ReadOSTimer()
 
 	var osEnd int64
@@ -54,7 +54,7 @@ func PrintTimerStats() {
 		osEnd, _ = ReadOSTimer()
 		osElapsed = osEnd - osStart
 	}
-	cpuEnd := ReadCpuTimer()
+	cpuEnd := ReadCPUTimer()
 	cpuElapsed := cpuEnd - cpuStart
 
 	cpuFreq := int64(0)

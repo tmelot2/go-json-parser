@@ -5,82 +5,85 @@ import (
 	"strings"
 )
 
-type TSC struct {
-	start uint64
-	end   uint64
+var MAX_BLOCKS = 4096
+
+// Holds running data for a profiled Block.
+type Block struct {
+	startTSC uint64 // We only ever store the start TSC.
+	total    uint64 // Accumulates on every EndBlock() call.
+	hitCount uint64 // Accumulates +1 for every StartBlock() call.
 }
 
 type Profiler struct {
-	// Maps block names to TSC start & end counters.
-	tscs   map[string]TSC
-	// Maps block names to total counted time from TSCs
-	totals map[string]uint64
-	// Remembers ordering of TSCs by block name
+	// Maps block names to blocks.
+	blocks map[string]Block
+	// Remembers ordering of blocks by name.
 	order  []string
+	// Remembers when the profiler started so we can compute total time.
+	startTSC uint64
 }
 
 func newProfiler() *Profiler {
 	return &Profiler{
-		tscs:   make(map[string]TSC),
-		totals: make(map[string]uint64),
-		order:  make([]string, 0),
+		blocks:   make(map[string]Block, MAX_BLOCKS),
+		order:    make([]string, 0, MAX_BLOCKS),
+		startTSC: 0,
 	}
 }
 
+func (p *Profiler) BeginProfile() {
+	p.startTSC = ReadCPUTimer()
+}
+
 // Starts a new time stamp counter for the given block name.
-// NOTE: WILL ERASE existing data for the given block.
+// NOTE: Will replace startTSC for the given block.
 func (p *Profiler) StartBlock(name string) {
-	// Add to ordering. It uses same names as TSCs, so check with a hash lookup instead of
-	// an array scan.
-	_, ok := p.tscs[name]
+	// Get block & add to ordering. It uses same names as blocks, so check with a hash
+	// lookup instead of an array scan.
+	block, ok := p.blocks[name]
 	if !ok {
+		if len(p.order) > MAX_BLOCKS {
+			msg := fmt.Sprintf("Number of blocks has exceeded maximum of %d", MAX_BLOCKS)
+			panic(msg)
+		}
 		p.order = append(p.order, name)
 	}
 
-	// Timestamp start of measurement
-	p.tscs[name] = TSC{
-		start: ReadCPUTimer(),
-		end:   0,
-	}
+	// Timestamp start of measurement.
+	block.hitCount += 1
+	block.startTSC = ReadCPUTimer()
+	p.blocks[name] = block
 }
 
 // Ends a time stamp counter & accumulates its total duration.
 func (p *Profiler) EndBlock(name string) {
+	// Get the TSC before doing other work.
 	endTSC := ReadCPUTimer()
 
-	// Ignore if TSC block name does not exist
-	tscVal, ok := p.tscs[name]
+	// Ignore if block name does not exist.
+	block, ok := p.blocks[name]
 	if !ok {
 		return
 	}
 
-	// Set end TSC
-	tscVal.end = endTSC
-	p.tscs[name] = tscVal
-
-	// Add sum for block if it doesn't exist
-	totalVal, ok := p.totals[name]
-	if !ok {
-		p.totals[name] = 0
-		totalVal = 0
+	// Calc duration, return if negative.
+	duration := endTSC - block.startTSC
+	if duration < 0 {
+		return
 	}
 
-	// Calculate total
-	if tscVal.start != 0 && tscVal.end != 0 {
-		// TODO: Check that end > start
-		duration := tscVal.end - tscVal.start
-		totalVal += duration
-		p.totals[name] = totalVal
-	}
+	// Update total & write back.
+	block.total += duration
+	p.blocks[name] = block
 }
 
 // Prints block names & their durations in the order that Start() was called for each block.
-func (p *Profiler) Print() {
-	// Compute total
-	totalCycles := uint64(0)
-	for _, t := range p.totals {
-		totalCycles += t
-	}
+func (p *Profiler) EndAndPrintProfile() {
+	endTSC := ReadCPUTimer()
+
+	// statsStartTSC := ReadCPUTimer()
+
+	totalCycles := endTSC - p.startTSC
 
 	// Print CPU info
 	printer := GetPrinter()
@@ -91,13 +94,17 @@ func (p *Profiler) Print() {
 
 	// Print block profiles
 	for _, blockName := range p.order {
-		p.printBlockTimeElapsed(blockName, p.totals[blockName], totalCycles)
+		p.printBlockTimeElapsed(blockName, p.blocks[blockName].hitCount, p.blocks[blockName].total, totalCycles)
 	}
 
-	fmt.Println(strings.Repeat("=", 50))
+	fmt.Println(strings.Repeat("=", 60))
 
 	// Print total
-	p.printBlockTimeElapsed("Total", totalCycles, totalCycles)
+	p.printBlockTimeElapsed("Total", 1, totalCycles, totalCycles)
+
+	// statsEndTSC := ReadCPUTimer()
+	// statsDuration := statsEndTSC - statsStartTSC
+	// p.printBlockTimeElapsed("These Stats", 1, statsDuration, statsDuration)
 }
 
 // Returns len of longest block name string. Used for print formatting.
@@ -112,11 +119,11 @@ func (p *Profiler) getLongestBlockNameLen() int {
 }
 
 // Prints profiling information for the given block data.
-func (p *Profiler) printBlockTimeElapsed(label string, durationCycles, totalCycles uint64) {
+func (p *Profiler) printBlockTimeElapsed(label string, hitCount, durationCycles, totalCycles uint64) {
 	printer := GetPrinter()
 	durationCyclesStr := printer.Sprintf("%*d", 20, durationCycles)
 	longestBlockNameLen := p.getLongestBlockNameLen() + 1
 	percent := float64(100.0 * (float64(durationCycles) / float64(totalCycles)))
 
-	printer.Printf("  %*s: %14s (%.2f%%)\n", longestBlockNameLen, label, durationCyclesStr, percent)
+	printer.Printf("  %*s: %14s | %*d | (%.2f%%)\n", longestBlockNameLen, label, durationCyclesStr, 8, hitCount, percent)
 }

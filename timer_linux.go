@@ -6,8 +6,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Returns CPU timer value, function implementation is in assembly.
-// TOODO: Only ARM64 is currently supported, add X64
+// Declare asm functions that return CPU timer values.
+// TODO: Only ARM64 is currently supported, add X64.
+// Also, the ARM impl uses CNTVCT which returns a 24MHz timer on MacOS Sonoma.
+// Without a cycle counter from the CPU & OS, the 24Mhz doesn't really help us.
 func ReadCpuTimer() int64
 
 // GetOSTimerFreq returns the frequency of the OS timer.

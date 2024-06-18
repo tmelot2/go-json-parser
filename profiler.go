@@ -9,9 +9,11 @@ var MAX_BLOCKS = 4096
 
 // Holds running data for a profiled Block.
 type Block struct {
-	startTSC uint64 // We only ever store the start TSC.
-	total    uint64 // Accumulates on every EndBlock() call.
-	hitCount uint64 // Accumulates +1 for every StartBlock() call.
+	startTSC      uint64 // We only ever store the start TSC.
+	total         uint64 // Accumulates cycle count on EndBlock().
+	totalChildren uint64 // Accumulates children cycle count on EndBlock(), so we can subtract out nested blocks.
+	hitCount      uint64 // Accumulates +1 for every StartBlock() call.
+	parentName    string // Tracks parent block name to handle nested blocks.
 }
 
 // Special bucket used to profile the profiler.
@@ -61,8 +63,10 @@ func (p *Profiler) StartBlock(name string) {
 		p.order = append(p.order, name)
 	}
 
-	// Timestamp start of measurement.
+	// Setup measurement
+	block.parentName = globalProfilerParent
 	block.hitCount += 1
+	globalProfilerParent = name
 	block.startTSC = ReadCPUTimer()
 	p.blocks[name] = block
 
@@ -73,7 +77,7 @@ func (p *Profiler) StartBlock(name string) {
 
 // Ends a time stamp counter & accumulates its total duration.
 func (p *Profiler) EndBlock(name string) {
-	profStart := ReadCPUTimer()
+	tsc := ReadCPUTimer()
 
 	// Ignore if block name does not exist.
 	block, ok := p.blocks[name]
@@ -81,8 +85,11 @@ func (p *Profiler) EndBlock(name string) {
 		return
 	}
 
+	// Unwind parent
+	globalProfilerParent = block.parentName
+
 	// Calc duration, return if negative.
-	duration := ReadCPUTimer() - block.startTSC
+	duration := tsc - block.startTSC
 	if duration < 0 {
 		return
 	}
@@ -91,8 +98,13 @@ func (p *Profiler) EndBlock(name string) {
 	block.total += duration
 	p.blocks[name] = block
 
+	// Update parent block
+	parentBlock := p.blocks[block.parentName]
+	parentBlock.totalChildren += duration
+	p.blocks[block.parentName] = parentBlock
+
 	// Profile the profiler.
-	p.profilerBlock.total += ReadCPUTimer() - profStart
+	p.profilerBlock.total += ReadCPUTimer() - tsc
 	p.profilerBlock.hitCount += 1
 }
 
@@ -110,13 +122,14 @@ func (p *Profiler) EndAndPrintProfile() {
 	// Print block profiles.
 	p.printBlockHeader()
 	for _, blockName := range p.order {
-		p.printBlockTimeElapsed(blockName, p.blocks[blockName].hitCount, p.blocks[blockName].total, totalCycles)
+		block := p.blocks[blockName]
+		p.printBlockTimeElapsed(blockName, block.hitCount, block.total, block.totalChildren, totalCycles)
 	}
 
 	// Print profiler & total
 	fmt.Println(strings.Repeat("=", 60))
-	p.printBlockTimeElapsed(PROFILER_BLOCK_NAME[2:], p.profilerBlock.hitCount, p.profilerBlock.total, totalCycles)
-	p.printBlockTimeElapsed("Total", 1, totalCycles, totalCycles)
+	p.printBlockTimeElapsed(PROFILER_BLOCK_NAME[2:], p.profilerBlock.hitCount, p.profilerBlock.total, 0, totalCycles)
+	p.printBlockTimeElapsed("Total", 1, totalCycles, 0, totalCycles)
 }
 
 // Returns len of longest block name string. Used for print formatting.
@@ -137,11 +150,19 @@ func (p *Profiler) printBlockHeader() {
 }
 
 // Prints profiling information for the given block data.
-func (p *Profiler) printBlockTimeElapsed(label string, hitCount, durationCycles, totalCycles uint64) {
+func (p *Profiler) printBlockTimeElapsed(label string, hitCount, durationCycles, childrenCycles, totalCycles uint64) {
 	printer := GetPrinter()
-	durationCyclesStr := printer.Sprintf("%*d", 20, durationCycles)
+	elapsedCycles := durationCycles - childrenCycles
+	durationCyclesStr := printer.Sprintf("%*d", 20, elapsedCycles)
 	longestBlockNameLen := p.getLongestBlockNameLen() + 1
-	percent := float64(100.0 * (float64(durationCycles) / float64(totalCycles)))
+	percent := float64(100.0 * (float64(elapsedCycles) / float64(totalCycles)))
 
-	printer.Printf("  %*s: %14s | %*d | %.2f%%\n", longestBlockNameLen, label, durationCyclesStr, 8, hitCount, percent)
+	printer.Printf("  %*s: %14s | %*d | %.2f%%", longestBlockNameLen, label, durationCyclesStr, 8, hitCount, percent)
+
+	if childrenCycles > 0 {
+		percentWithChildren := float64(100.0 * (float64(durationCycles) / float64(totalCycles)))
+		printer.Printf(", %.2f%% w/children", percentWithChildren)
+	}
+
+	printer.Println("")
 }

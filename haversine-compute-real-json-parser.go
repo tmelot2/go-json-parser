@@ -38,6 +38,7 @@ func GetPrinter() *message.Printer {
 var DEBUG = false
 var OUTPUT_WIDTH = 10
 var globalProfiler = newProfiler()
+var globalProfilerParent string
 
 func readEntireFile(fileName string) ([]byte, error) {
 	globalProfiler.StartBlock("Read")

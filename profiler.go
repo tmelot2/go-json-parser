@@ -105,7 +105,7 @@ func (p *Profiler) EndAndPrintProfile() {
 	cpuFreq := EstimateCPUTimerFreq(false)
 	ms := 1000.0 * float64(totalCycles) / float64(cpuFreq)
 	fmt.Println("\n[CPU profiling stats]")
-	printer.Printf("Total time: %0.4fms (CPU freq %*d)\n", ms, 14, cpuFreq)
+	printer.Printf("Total time: %0.4fms (CPU freq %*d Hz)\n", ms, 14, cpuFreq)
 
 	// Print block profiles.
 	p.printBlockHeader()
@@ -113,11 +113,9 @@ func (p *Profiler) EndAndPrintProfile() {
 		p.printBlockTimeElapsed(blockName, p.blocks[blockName].hitCount, p.blocks[blockName].total, totalCycles)
 	}
 
-	// Print profiler block profile
-	p.printBlockTimeElapsed(PROFILER_BLOCK_NAME[2:], p.profilerBlock.hitCount, p.profilerBlock.total, totalCycles)
-
-	// Print total
+	// Print profiler & total
 	fmt.Println(strings.Repeat("=", 60))
+	p.printBlockTimeElapsed(PROFILER_BLOCK_NAME[2:], p.profilerBlock.hitCount, p.profilerBlock.total, totalCycles)
 	p.printBlockTimeElapsed("Total", 1, totalCycles, totalCycles)
 }
 

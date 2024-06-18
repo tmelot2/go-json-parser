@@ -63,6 +63,7 @@ func (l *Lexer) getUnlexedData() string {
 // the actual lexing only return the number of characters consumed, which lex() uses to advance
 // the position.
 func (l *Lexer) lex() ([]Token, error) {
+	globalProfiler.StartBlock("Lex")
 	var tokens []Token
 
 	for l.pos < len(l.data) {
@@ -110,6 +111,7 @@ func (l *Lexer) lex() ([]Token, error) {
 		return tokens, err
 	}
 
+	globalProfiler.EndBlock("Lex")
 	return tokens, nil
 }
 

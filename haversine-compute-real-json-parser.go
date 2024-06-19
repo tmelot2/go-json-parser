@@ -13,6 +13,7 @@ import (
 	// "strings"
 	// "strconv"
 	// "time"
+	// "unsafe"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -41,13 +42,23 @@ var globalProfiler = newProfiler()
 var globalProfilerParent string
 
 func readEntireFile(fileName string) ([]byte, error) {
-	globalProfiler.StartBlock("Read")
+	// Get file size for bandwidth calculation purposes.
+	fileInfo, err := os.Stat(fileName)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	// Start profile.
+	globalProfiler.StartBandwidth("Read", uint64(fileInfo.Size()))
+
+	// Read file
 	data, err := os.ReadFile(fileName)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
-	globalProfiler.EndBlock("Read")
+
+	globalProfiler.EndBandwidth("Read")
 	return data, nil
 }
 

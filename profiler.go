@@ -1,3 +1,8 @@
+// Simple code profiler. Enable with build tags: go run -tags="profile".
+//
+
+// +build profile
+
 package main
 
 import (

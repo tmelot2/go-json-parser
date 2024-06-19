@@ -1,4 +1,5 @@
-// Stub profiler that doesn't do anything. May still have slight overhead (we'll see when we start analyzing compiled asm).
+// Stub profiler that doesn't do anything. May still have slight overhead, but I think Go compiles
+// it out as part of dead code elimination. We'll see for sure when we start analyzing compiled asm.
 //
 
 // +build !profile

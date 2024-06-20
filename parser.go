@@ -31,7 +31,7 @@ import (
 
 // Parses the given string & returns result.
 func ParseJson(fileData string) (*JsonValue, error) {
-	globalProfiler.StartBlock("Full Parse")
+	globalProfiler.StartBlock("Parser")
 	// Lex into tokens
 	lexer := newLexer(fileData)
 	tokens, err := lexer.lex()
@@ -41,16 +41,16 @@ func ParseJson(fileData string) (*JsonValue, error) {
 	}
 
 	// Parse into map
-	globalProfiler.StartBlock("Parse")
+	globalProfiler.StartBlock("Parser.Parse")
 	parser := newParser(tokens)
 	jsonResult, parseErr := parser.parse()
 	if parseErr != nil {
 		msg := fmt.Sprintln(parseErr)
 		return nil, errors.New(msg)
 	}
-	globalProfiler.EndBlock("Parse")
+	globalProfiler.EndBlock("Parser.Parse")
 
-	globalProfiler.EndBlock("Full Parse")
+	globalProfiler.EndBlock("Parser")
 	return &JsonValue{jsonResult}, nil
 }
 

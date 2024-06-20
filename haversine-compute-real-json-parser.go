@@ -67,10 +67,16 @@ var EARTH_RADIUS = 6372.8
 func haversineSum(json *JsonValue) {
 	p := GetPrinter()
 
-	globalProfiler.StartBlock("Sum")
 	fmt.Println("===============================")
 	haversineSum := 0.0
+	// Profile to get time for GetArray() call.
+	globalProfiler.StartBlock("SumHaversine")
 	pairs, _ := json.GetArray("pairs")
+	globalProfiler.EndBlock("SumHaversine")
+
+	// Profile rest of haversine sum. 32 is bytes per haversine set. 4 points,
+	// each a float64, so 8 bytes. 8*4 = 32.
+	globalProfiler.StartBandwidth("SumHaversine", uint64(len(pairs)*32))
 	for _, p := range pairs {
 		x0, _ := p.GetFloat("x0")
 		y0, _ := p.GetFloat("y0")
@@ -79,7 +85,7 @@ func haversineSum(json *JsonValue) {
 		haversineSum += referenceHaversine(x0, y0, x1, y1, EARTH_RADIUS)
 	}
 	avg := haversineSum / float64(len(pairs))
-	globalProfiler.EndBlock("Sum")
+	globalProfiler.EndBandwidth("SumHaversine")
 
 	globalProfiler.StartBlock("MiscOutput")
 	p.Printf("Count: %*d\nHaversine sum: %.16f\nHaversine avg: %.16f\n", 14, len(pairs), haversineSum, avg)

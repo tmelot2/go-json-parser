@@ -194,11 +194,16 @@ func (p *Profiler) printBlockTimeElapsed(label string, totalCycles, timerFreq ui
 	}
 
 	if block.byteCount > 0 {
-		printer.Printf(", byteCount = %d", block.byteCount)
-		// megabyte := float64(1024.0) * float64(1024.0)
-		// gigabyte := megabyte * float64(1024.0)
+		megabyte := float64(1024.0) * float64(1024.0)
+		gigabyte := megabyte * float64(1024.0)
 
-		// seconds := byte
+		seconds := float64(elapsedCycles) / float64(timerFreq)
+		bytesPerSecond := float64(block.byteCount) / seconds
+		megabytes := float64(block.byteCount) / megabyte
+		gigabytesPerSecond := bytesPerSecond / gigabyte
+
+		printer.Printf(" [%d, %2.2f, %2.2f] ", timerFreq, seconds, bytesPerSecond)
+		printer.Printf(", %0.3fmb at %.2fgb/s", megabytes, gigabytesPerSecond)
 	}
 
 	printer.Println("")

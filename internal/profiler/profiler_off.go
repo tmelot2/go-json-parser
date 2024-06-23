@@ -4,7 +4,10 @@
 
 // +build !profile
 
-package main
+package profiler
+
+var GlobalProfiler = newProfiler()
+var GlobalProfilerParent string
 
 type Profiler struct {}
 
@@ -12,4 +15,6 @@ func newProfiler() *Profiler { return &Profiler{} }
 func (p *Profiler) BeginProfile() {}
 func (p *Profiler) StartBlock(name string) {}
 func (p *Profiler) EndBlock(name string) {}
+func (p *Profiler) StartBandwidth(name string, byteCount uint64) {}
+func (p *Profiler) EndBandwidth(name string) {}
 func (p *Profiler) EndAndPrintProfile() {}

@@ -1,4 +1,4 @@
-module tmelot.com/computerenhance
+module tmelot.jsonparser
 
 go 1.22.1
 

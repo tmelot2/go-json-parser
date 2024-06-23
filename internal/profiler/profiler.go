@@ -3,14 +3,20 @@
 
 // +build profile
 
-package main
+package profiler
 
 import (
 	"fmt"
 	"strings"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 var MAX_BLOCKS = 4096
+
+var GlobalProfiler = newProfiler()
+var GlobalProfilerParent string
 
 // Holds running data for a profiled Block.
 type Block struct {
@@ -70,10 +76,10 @@ func (p *Profiler) startBlock(name string, byteCount uint64) {
 	}
 
 	// Setup measurement
-	block.parentName = globalProfilerParent
+	block.parentName = GlobalProfilerParent
 	block.hitCount += 1
 	block.byteCount += byteCount
-	globalProfilerParent = name
+	GlobalProfilerParent = name
 	block.startTSC = ReadCPUTimer()
 	p.blocks[name] = block
 
@@ -93,7 +99,7 @@ func (p *Profiler) endBlock(name string) {
 	}
 
 	// Unwind parent
-	globalProfilerParent = block.parentName
+	GlobalProfilerParent = block.parentName
 
 	// Calc duration, return if negative.
 	duration := tsc - block.startTSC
@@ -133,6 +139,10 @@ func (p *Profiler) EndBlock(name string) {
 // End block.
 func (p *Profiler) EndBandwidth(name string) {
 	p.endBlock(name)
+}
+
+func GetPrinter() *message.Printer {
+	return message.NewPrinter(language.English) // For printing large numbers with commas
 }
 
 // Prints block names & their durations in the order that Start() was called for each block.

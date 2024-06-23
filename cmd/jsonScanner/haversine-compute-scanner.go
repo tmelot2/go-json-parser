@@ -1,5 +1,3 @@
-// +build scanner
-
 /*
 	Does not parse JSON, instead it scans each JSON line & picks out the points.
 
@@ -144,7 +142,7 @@ func main() {
 	const EARTH_RADIUS = 6372.8
 
 	// Parse input args
-	inputFileArg := flag.String("input", "pairs.json", "Name of input file containing point pairs")
+	inputFileArg := flag.String("input", "../../pairs.json", "Name of input file containing point pairs")
 	flag.Parse()
 
 	points := parseJsonFile(*inputFileArg)

@@ -1,5 +1,3 @@
-// +build jsongenerator
-
 /*
 	Generates Haversine points JSON data file. Also computes Haversine & prints reference answer.
 */
@@ -105,7 +103,7 @@ func main() {
 	}
 
 	// Open file
-	file, err := os.Create("pairs.json")
+	file, err := os.Create("../../pairs.json")
 	if err != nil {
 		fmt.Println("Error:", err)
 		return

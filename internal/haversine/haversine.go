@@ -1,9 +1,8 @@
-package main
+package haversine
 
 import (
 	"math"
 )
-
 
 func radiansFromDegrees(degrees float64) float64 {
 	result := 0.01745329251994329577 * degrees
@@ -15,7 +14,7 @@ func square(a float64) float64 {
 	return result
 }
 
-func referenceHaversine(x0, y0, x1, y1, radius float64) float64 {
+func ReferenceHaversine(x0, y0, x1, y1, radius float64) float64 {
 	lat1 := y0
 	lat2 := y1
 	lon1 := x0

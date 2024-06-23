@@ -1,8 +1,10 @@
-package main
+package jsonParser
 
 import (
 	"errors"
 	"fmt"
+
+	"tmelot.jsonparser/internal/profiler"
 )
 
 /*
@@ -63,6 +65,7 @@ func (l *Lexer) getUnlexedData() string {
 // the actual lexing only return the number of characters consumed, which lex() uses to advance
 // the position.
 func (l *Lexer) lex() ([]Token, error) {
+	profiler.GlobalProfiler.StartBlock("Parser.Lex")
 	var tokens []Token
 
 	for l.pos < len(l.data) {
@@ -110,6 +113,7 @@ func (l *Lexer) lex() ([]Token, error) {
 		return tokens, err
 	}
 
+	profiler.GlobalProfiler.EndBlock("Parser.Lex")
 	return tokens, nil
 }
 

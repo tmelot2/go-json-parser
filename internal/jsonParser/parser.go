@@ -1,10 +1,12 @@
-package main
+package jsonParser
 
 import (
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"tmelot.jsonparser/internal/profiler"
 )
 
 /*
@@ -31,7 +33,7 @@ import (
 
 // Parses the given string & returns result.
 func ParseJson(fileData string) (*JsonValue, error) {
-	globalProfiler.StartBlock("Parse")
+	profiler.GlobalProfiler.StartBlock("Parser")
 	// Lex into tokens
 	lexer := newLexer(fileData)
 	tokens, err := lexer.lex()
@@ -41,14 +43,16 @@ func ParseJson(fileData string) (*JsonValue, error) {
 	}
 
 	// Parse into map
+	profiler.GlobalProfiler.StartBlock("Parser.Parse")
 	parser := newParser(tokens)
 	jsonResult, parseErr := parser.parse()
 	if parseErr != nil {
 		msg := fmt.Sprintln(parseErr)
 		return nil, errors.New(msg)
 	}
+	profiler.GlobalProfiler.EndBlock("Parser.Parse")
 
-	globalProfiler.EndBlock("Parse")
+	profiler.GlobalProfiler.EndBlock("Parser")
 	return &JsonValue{jsonResult}, nil
 }
 
@@ -110,6 +114,7 @@ func (p *Parser) getNextToken() *Token {
 // Parses & returns JSON object starting at the next token. If parsing an object or array, consumes the open brace/bracket
 // and then parses the value, which could recurse back in here.
 func (p *Parser) parseObject() (map[string]any, error) {
+	// profiler.GlobalProfiler.StartBlock("ParseJSONObject")
 	result := make(map[string]any)
 
 	// Prime loop by parsing 1st key
@@ -147,6 +152,7 @@ func (p *Parser) parseObject() (map[string]any, error) {
 				return result, err
 			}
 		case JsonObjectEnd:
+			// profiler.GlobalProfiler.EndBlock("ParseJSONObject")
 			return result, nil
 		default:
 			msg := fmt.Sprintf("Expected field separator \"%s\" or close object \"%s\", found \"%s\" instead", JSON_SYNTAX_COMMA, JSON_SYNTAX_RIGHT_BRACE, nextToken.Value)
@@ -196,6 +202,7 @@ func (p *Parser) parseArray() ([]any, error) {
 // Parses & returns the given value token. May recurse back into parseObject or Array. Does not
 // itself consume tokens, but may make calls that will.
 func (p *Parser) parseValue(valueToken *Token) (any, error) {
+	// profiler.GlobalProfiler.StartBlock("ParseJSONValue")
 	var result any
 	var err error
 
@@ -236,5 +243,6 @@ func (p *Parser) parseValue(valueToken *Token) (any, error) {
 		return result, errors.New(msg)
 	}
 
+	// profiler.GlobalProfiler.EndBlock("ParseJSONValue")
 	return result, nil
 }

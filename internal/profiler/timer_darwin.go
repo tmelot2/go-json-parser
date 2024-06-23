@@ -1,72 +1,36 @@
-// +build windows
+// +build darwin
 
-package main
+package profiler
 
 import (
 	"fmt"
-	"syscall"
-	"unsafe"
 
-	"golang.org/x/sys/windows"
+	"golang.org/x/sys/unix"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 // Declare asm functions that return CPU timer values.
-func ReadCPUTimer()      uint64
+// The ARM impl uses CNTVCT which returns a 24MHz timer on MacOS Sonoma.
+// Without a cycle counter from the CPU & OS, the 24Mhz doesn't really help us
+// count cycles. BUT, the relative percentages of cycle time is still useful!
+func ReadCPUTimer() uint64
 
-// Declare syscalls for getting QueryPerformanceCounter
-var (
-	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
-	procQueryPerformanceFrequency = kernel32.NewProc("QueryPerformanceFrequency")
-	procQueryPerformanceCounter   = kernel32.NewProc("QueryPerformanceCounter")
-)
-
-// Returns result of syscall QueryPerformanceFrequency()
-// Returns 10,000,000 on my amd64 Windows machine
+// GetOSTimerFreq returns the frequency of the OS timer.
 func GetOSTimerFreq() (uint64, error) {
-	var freq uint64
-	var err error
-	r1, _, e1 := syscall.Syscall(
-		procQueryPerformanceFrequency.Addr(),
-		1,
-		uintptr(unsafe.Pointer(&freq)),
-		0,
-		0,
-	)
-
-	if r1 == 0 {
-		if e1 != 0 {
-			err = error(e1)
-		} else {
-			err = syscall.EINVAL
-		}
-		return freq, err
-	}
-	return freq, err
+    // On Unix-like systems, the frequency can be considered as nanoseconds in a second
+    return 1e9, nil // 1 second = 1e9 nanoseconds
 }
 
-// Returns result of syscall QueryPerformanceCounter()
+// ReadOSTimer returns the current time from the OS high-resolution timer.
 func ReadOSTimer() (uint64, error) {
-	var osTimer uint64
-	var err error
-	r1, _, e1 := syscall.Syscall(
-		procQueryPerformanceCounter.Addr(),
-		1,
-		uintptr(unsafe.Pointer(&osTimer)),
-		0,
-		0,
-	)
-
-	if r1 == 0 {
-		if e1 != 0 {
-			err = error(e1)
-		} else {
-			err = syscall.EINVAL
-		}
-		return osTimer, err
-	}
-	return osTimer, err
+    var ts unix.Timespec
+    err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+    if err != nil {
+        return 0, err
+    }
+    osTimerFreq, _ := GetOSTimerFreq()
+    return osTimerFreq * uint64(ts.Sec) + uint64(ts.Nsec), nil // Convert to nanoseconds
 }
 
 // Prints read, measurement, & guess of CPU frequency & related data.

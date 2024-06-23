@@ -83,7 +83,7 @@ const CLUSTER_SIZE = 64 // TODO: Make const or input arg
 
 func main() {
 	// Parse input args
-	pairsArg := flag.Int("pairs", 10, "Number of pairs of points to generate")
+	pairsArg := flag.Int("pairs", 10000, "Number of pairs of points to generate")
 	methodArg := flag.String("method", "uniform", "Point distribution method: uniform or cluster")
 	flag.Parse()
 	pairs := *pairsArg

@@ -7,7 +7,7 @@ Project pieces:
 - A from-scratch JSON parser.
 - A from-scratch block profiler to analyze CPU cycles, memory bandwidth, & more.
 - A from-scratch repetition tester for further performance analysis.
-- Future: An extrenely optimized & performant JSON parser. In the course we are going down to the assembly-language level of analysis & optimization, leveraging CPU architecture features like caching, vector instructions, etc.
+- Future: An extremely optimized & performant JSON parser. In the course we are going down to the assembly-language level of analysis & optimization, leveraging CPU architecture features like caching, vector instructions, etc.
 
 Still a work-in-progress.
 
@@ -44,6 +44,31 @@ go run .
 go run -tags=profile .
 ```
 
+## Example Profiler Output
+
+A run with 1 million pairs on an AMD Ryzen 9 5900X @ 3.7 Ghz:
+
+```
+Count:         1,000,000
+Haversine sum: 8,623,222,205.7044734954833984
+Haversine avg: 8,623.2222057044727990
+
+[CPU profiling stats]
+Total time: 7,248.6769ms (CPU freq  3,700,051,600 Hz)
+          Block                Cycles |  Hit Cnt | Percent
+        Startup:               16,835 |        1 | 0.00%
+           Read:          114,389,146 |        1 | 0.43%, 105.301mb at 3.33gb/s
+      ReadToStr:          108,329,118 |        1 | 0.40%
+         Parser:               16,909 |        1 | 0.00%, 95.23% w/children
+     Parser.Lex:       22,827,895,456 |        1 | 85.11%
+   Parser.Parse:        2,712,289,181 |        1 | 10.11%
+   SumHaversine:        1,056,989,343 |        2 | 3.94%, 30.518mb at 0.10gb/s
+     MiscOutput:              178,858 |        1 | 0.00%
+============================================================
+       Profiler:               59,200 |       18 | 0.00%
+          Total:       26,820,478,472 |        0 | 100.00%
+```
+
 
 ## Progress
 
@@ -56,10 +81,12 @@ go run -tags=profile .
 - Block profiler
 	- It also works! And it's so cool to use it!
 	- For each block, measures CPU cycles, hit count, & optionally memory bandwidth.
+	- Supports nested profiled blocks.
+	- TODO: Support recursive profiled blocks. You can do this now, but the numbers get crazy & meaningless.
 - Repetition tester
 	- WIP
 
 ## Todo
 
 - Currently, to use, you call `parser.ParseJson(fileData)`. This requires the entire file is loaded into memory. Bad for big files!
-	- [ ] Refactor to use a streaming reader, maybe make a JsonParser class that recieves the exernal methods
+	- TODO: Refactor to use a streaming reader, maybe make a JsonParser class that recieves the exernal methods

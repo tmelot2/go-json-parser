@@ -1,7 +1,7 @@
 package repetitionTester
 
 import (
-	// "fmt"
+	"fmt"
 	"math"
 
 	"tmelot.jsonparser/internal/profiler"
@@ -28,11 +28,11 @@ type RepetitionTester struct {
 	tryForTime               uint64
 	testStartedAt            uint64
 
-	testMode                  TestMode
+	testMode                   TestMode
 	printNewMinimums           bool
 	openBlockCount             uint32
 	closeBlockCount            uint32
-	timeAccumulatedOnThisTest  uint32
+	timeAccumulatedOnThisTest  uint64
 	bytesAccumulatedOnThisTest uint32
 
 	results RepetitionTestResults
@@ -73,4 +73,23 @@ func (rt *RepetitionTester) NewTestWave(targetProcessedByteCount, cpuTimerFreq u
 
 	rt.tryForTime = uint64(secondsToTry) * cpuTimerFreq
 	rt.testStartedAt = profiler.ReadCPUTimer()
+}
+
+func (rt *RepetitionTester) BeginTime() {
+	rt.openBlockCount += 1
+	rt.timeAccumulatedOnThisTest -= profiler.ReadCPUTimer()
+}
+
+func (rt *RepetitionTester) EndTime() {
+	rt.closeBlockCount += 1
+	rt.timeAccumulatedOnThisTest += profiler.ReadCPUTimer()
+}
+
+func (rt *RepetitionTester) IsTesting() bool {
+	return true
+}
+
+func (rt *RepetitionTester) Print() {
+	t := float64(rt.timeAccumulatedOnThisTest/rt.cpuTimerFreq)
+	fmt.Print("\r", rt.cpuTimerFreq, t)
 }

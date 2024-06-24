@@ -1,6 +1,6 @@
 # Go JSON Parser with Haversine Calculator
 
-A Haversine calculator that uses a from-scratch, eventually highly-performance JSON parser written in Go. It's a project for the ["Performance-Aware Programming" course](https://www.computerenhance.com/) I am taking.
+A Haversine calculator that uses a from-scratch, eventually highly-performance JSON parser written in Go. It's a project for the ["Performance-Aware Programming" course](https://www.computerenhance.com) I am taking.
 
 Project pieces:
 

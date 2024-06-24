@@ -1,14 +1,17 @@
 # Go JSON Parser with Haversine Calculator
 
-A Haversine calculator that uses a simple JSON parser written in Go. Still a work-in-progress.
+A Haversine calculator that uses a from-scratch, eventually highly-performance JSON parser written in Go. It's a project for the ["Performance-Aware Programming" course](https:#www.computerenhance.com/p/table-of-contents) I am taking.
+
+Project pieces:
+
+- A from-scratch JSON parser.
+- A from-scratch block profiler to analyze CPU cycles, memory bandwidth, & more.
+- A from-scratch repetition tester for further performance analysis.
+- Future: An extrenely optimized & performant JSON parser. In the course we are going down to the assembly-language level of analysis & optimization, leveraging CPU architecture features like caching, vector instructions, etc.
+
+Still a work-in-progress.
 
 Created with Go 1.22.1, no external dependencies.
-
-## Origins
-
-This project was created as part of the coursework for the ["Performance-Aware Programming" course](https:#www.computerenhance.com/p/table-of-contents) I am taking. Some of the coursework artifacts are still in this project, like the Haversine stuff. It seemed useful to make the parser stuff into a separate module to gain experience with that while learning Go.
-
-I am also learning Go, & this is the 1st project I am using it with, so there's bound to be mistakes!
 
 ## Usage
 
@@ -44,10 +47,17 @@ go run -tags=profile .
 
 ## Progress
 
-- Parser works!
-- Supported types: Object, array, string, int, float
-- Parsed data is of type JsonValue, which you can use to pick out typed data.
-- There are unit tests for the lexer & parser, which will continue to be expanded.
+- Parser
+	- It works!
+	- Supported types: Object, array, string, int, float. Missing: bool.
+	- Parsed data is of type JsonValue, which you can use to pick out typed data.
+	- There are unit tests for the lexer & parser, which will continue to be expanded.
+	- Currently ~9x slower than Go's builtin parser. Lots of room for improvement!
+- Block profiler
+	- It also works! And it's so cool to use it!
+	- For each block, measures CPU cycles, hit count, & optionally memory bandwidth.
+- Repetition tester
+	- WIP
 
 ## Todo
 

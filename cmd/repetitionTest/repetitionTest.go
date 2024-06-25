@@ -24,17 +24,19 @@ func readViaOSStat(rt *repetitionTester.RepetitionTester, fileName string) {
 			msg := fmt.Sprintln("Error:", err)
 			panic(msg)
 		}
-		rt.Print()
 	}
 }
 
 func main() {
 	rt := repetitionTester.NewRepetitionTester()
-	fmt.Println(rt)
+	cpuFreq := profiler.EstimateCPUTimerFreq(false)
 
-	for i := 0; i < 40; i++ {
-		rt.NewTestWave(0, profiler.EstimateCPUTimerFreq(false), 3)
+	for i := 0; i < 3; i++ {
+		bytes := uint64(0)
+		secondsToTry := uint32(1)
+		rt.NewTestWave(bytes, cpuFreq, secondsToTry)
 		readViaOSStat(rt, "../../pairs.json")
+		fmt.Println("=========================================")
 	}
 
 	fmt.Println("\nDone!")

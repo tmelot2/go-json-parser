@@ -44,6 +44,14 @@ go run .
 go run -tags=profile .
 ```
 
+Run repetition tester:
+```sh
+cd cmd/repetitionTest
+
+# Run app
+go run .
+```
+
 ## Example Profiler Output
 
 A run with 1 million pairs on an AMD Ryzen 9 5900X @ 3.7 Ghz:
@@ -69,6 +77,32 @@ Total time: 7,248.6769ms (CPU freq  3,700,051,600 Hz)
           Total:       26,820,478,472 |        0 | 100.00%
 ```
 
+## Example Repetition Tester Output
+
+A run that repeatedly loads 10 million pairs:
+
+```
+OS.ReadFile :
+Min: 715707021 (193.432730ms) 5.282137gb/s
+Max: 2174110084 (587.592460ms) 1.738855gb/s
+Avg: 759530706 (205.276871ms) 4.977367gb/s
+
+ioutil.ReadFile :
+Min: 721926739 (195.113721ms) 5.236629gb/s
+Max: 828885191 (224.021172ms) 4.560900gb/s
+Avg: 738089858 (199.482096ms) 5.121955gb/s
+
+bufio.Reader :
+Min: 1440673033 (389.367870ms) 2.624095gb/s
+Max: 1864848749 (504.009007ms) 2.027222gb/s
+Avg: 1495594008 (404.211254ms) 2.527733gb/s
+
+bytes.Buffer :
+Min: 1456971513 (393.772828ms) 2.594740gb/s
+Max: 10149646361 (2743.124979ms) 0.372472gb/s
+Avg: 1823100121 (492.725687ms) 2.073645gb/s
+```
+
 
 ## Progress
 
@@ -77,14 +111,15 @@ Total time: 7,248.6769ms (CPU freq  3,700,051,600 Hz)
 	- Supported types: Object, array, string, int, float. Missing: bool.
 	- Parsed data is of type JsonValue, which you can use to pick out typed data.
 	- There are unit tests for the lexer & parser, which will continue to be expanded.
-	- Currently ~9x slower than Go's builtin parser. Lots of room for improvement!
+	- Currently ~9x slower than Go's builtin parser. GOOD, lots of room for improvement!
 - Block profiler
 	- It also works! And it's so cool to use it!
 	- For each block, measures CPU cycles, hit count, & optionally memory bandwidth.
 	- Supports nested profiled blocks.
 	- TODO: Support recursive profiled blocks. You can do this now, but the numbers get crazy & meaningless.
 - Repetition tester
-	- WIP
+	- It also also works!
+	- Repeatedly measures calls to different Go stl file read functions in order to find the "stars align" best-case speed.
 
 ## Todo
 

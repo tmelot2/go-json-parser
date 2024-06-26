@@ -100,11 +100,11 @@ func main() {
 	fileName := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [4]TestFunction{
+	testFunctions := [2]TestFunction{
 		{name: "OS.ReadFile", fun: readViaOSReadFile},
 		{name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
-		{name: "bufio.Reader", fun: readViaBufIOReader},
-		{name: "bytes.Buffer", fun: readViaBytesBuffer},
+		// {name: "bufio.Reader", fun: readViaBufIOReader},
+		// {name: "bytes.Buffer", fun: readViaBytesBuffer},
 	}
 
 	// Create multiple testers, one for each test function.
@@ -124,10 +124,11 @@ func main() {
 	byteCount := uint64(fileInfo.Size())
 
 	// Run tests!
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
+	// for true {
 		for i, testFunc := range testFunctions {
-			fmt.Println(testFunc.name, ":")
-			secondsToTry := uint32(4)
+			fmt.Println("---", testFunc.name, "---")
+			secondsToTry := uint32(1)
 			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
 			testFunc.fun(testers[i], fileName, byteCount)
 			fmt.Println("")

@@ -32,12 +32,14 @@ type RepetitionTester struct {
 	tryForTime               uint64
 	testStartedAt            uint64
 
-	testMode                   TestMode
-	printNewMinimums           bool
-	openBlockCount             uint64
-	closeBlockCount            uint64
-	timeAccumulatedOnThisTest  uint64
-	bytesAccumulatedOnThisTest uint64
+	testMode                        TestMode
+	printNewMinimums                bool
+	openBlockCount                  uint64
+	closeBlockCount                 uint64
+	// TODO: Refactor the below hardcoded vars to be vectorized, like listing 109 (https://github.com/cmuratori/computer_enhance/blob/main/perfaware/part3/listing_0109_pagefault_repetition_tester.cpp)
+	timeAccumulatedOnThisTest       uint64
+	bytesAccumulatedOnThisTest      uint64
+	pageFaultsAccumulatedOnThisTest uint32
 
 	results RepetitionTestResults
 }
@@ -84,11 +86,17 @@ func (rt *RepetitionTester) NewTestWave(targetProcessedByteCount, cpuTimerFreq u
 func (rt *RepetitionTester) BeginTime() {
 	rt.openBlockCount += 1
 	rt.timeAccumulatedOnThisTest -= profiler.ReadCPUTimer()
+
+	pageFaults, _ := GetPageFaultCount()
+	rt.pageFaultsAccumulatedOnThisTest -= pageFaults
 }
 
 func (rt *RepetitionTester) EndTime() {
 	rt.closeBlockCount += 1
 	rt.timeAccumulatedOnThisTest += profiler.ReadCPUTimer()
+
+	pageFaults, _ := GetPageFaultCount()
+	rt.pageFaultsAccumulatedOnThisTest += pageFaults
 }
 
 func (rt *RepetitionTester) CountBytes(byteCount uint64) {
@@ -160,6 +168,10 @@ func (rt *RepetitionTester) PrintTime(label string, cpuTime float64, cpuTimerFre
 			fmt.Printf(" %fgb/s", bestBandwidth)
 		}
 	}
+
+    if rt.pageFaultsAccumulatedOnThisTest > 0 {
+        fmt.Printf(" PF: %d (%0.4fk/fault)", rt.pageFaultsAccumulatedOnThisTest, float64(byteCount) / float64((uint64(rt.pageFaultsAccumulatedOnThisTest) * 1024.0)))
+    }
 }
 
 func (rt *RepetitionTester) PrintResults(results RepetitionTestResults, cpuTimerFreq, byteCount uint64) {

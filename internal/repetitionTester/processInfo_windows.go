@@ -1,0 +1,56 @@
+package repetitionTester
+
+// TODO: Make stub Darwin version until I figure that out.
+
+import (
+	// "fmt"
+	"syscall"
+	"unsafe"
+
+	"golang.org/x/sys/windows"
+)
+
+// Copied from MSDN: https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters
+type PROCESS_MEMORY_COUNTERS struct {
+    cb                         uint32
+    PageFaultCount             uint32
+    PeakWorkingSetSize         uintptr
+    WorkingSetSize             uintptr
+    QuotaPeakPagedPoolUsage    uintptr
+    QuotaPagedPoolUsage        uintptr
+    QuotaPeakNonPagedPoolUsage uintptr
+    QuotaNonPagedPoolUsage     uintptr
+    PagefileUsage              uintptr
+    PeakPagefileUsage          uintptr
+}
+
+var (
+	psapi                    = syscall.NewLazyDLL("psapi.dll")
+	procGetProcessMemoryInfo = psapi.NewProc("GetProcessMemoryInfo")
+)
+
+func GetPageFaultCount() (uint32, error) {
+	var memCounters PROCESS_MEMORY_COUNTERS
+	var err error
+
+	handle := windows.CurrentProcess()
+	cb := uint32(unsafe.Sizeof(memCounters))
+
+	r1, _, e1 := syscall.Syscall(
+		procGetProcessMemoryInfo.Addr(),
+		3,
+		uintptr(handle),
+		uintptr(unsafe.Pointer(&memCounters)),
+		uintptr(cb),
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+		return 0, err
+	}
+
+	return memCounters.PageFaultCount, nil
+}

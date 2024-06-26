@@ -1,7 +1,11 @@
+// Tests "stars align" best-possible speed for reading files different ways with
+// the standard library.
+
 package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -19,8 +23,7 @@ func readViaOSReadFile(rt *repetitionTester.RepetitionTester, fileName string, b
 		_, err := os.ReadFile(fileName)
 		rt.EndTime()
 		if err != nil {
-			msg := fmt.Sprintln("Error:", err)
-			panic(msg)
+			HandleError(err)
 		}
 		rt.CountBytes(byteCount)
 	}
@@ -33,8 +36,7 @@ func readViaIOUtilReadFile(rt *repetitionTester.RepetitionTester, fileName strin
 		_, err := ioutil.ReadFile(fileName)
 		rt.EndTime()
 		if err != nil {
-			msg := fmt.Sprintln("Error:", err)
-			panic(msg)
+			HandleError(err)
 		}
 		rt.CountBytes(byteCount)
 	}
@@ -45,17 +47,36 @@ func readViaBufIOReader(rt *repetitionTester.RepetitionTester, fileName string, 
 		// Read file
 		file, err := os.Open(fileName)
 		if err != nil {
-			msg := fmt.Sprintln("Error:", err)
-			panic(msg)
+			HandleError(err)
 		}
+		defer file.Close()
 		reader := bufio.NewReader(file)
 
 		rt.BeginTime()
 		_, err = io.ReadAll(reader)
 		rt.EndTime()
 		if err != nil {
-			msg := fmt.Sprintln("Error:", err)
-			panic(msg)
+			HandleError(err)
+		}
+		rt.CountBytes(byteCount)
+	}
+}
+
+func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+	for rt.IsTesting() {
+		// Read file
+		file, err := os.Open(fileName)
+		if err != nil {
+			HandleError(err)
+		}
+
+		var buf bytes.Buffer
+
+		rt.BeginTime()
+		_, err = io.Copy(&buf, file)
+		rt.EndTime()
+		if err != nil {
+			HandleError(err)
 		}
 		rt.CountBytes(byteCount)
 	}
@@ -67,6 +88,11 @@ type TestFunction struct {
 	fun  ReadOverheadTestFunc
 }
 
+func HandleError(err error) {
+	msg := fmt.Sprintln("Error:", err)
+	panic(msg)
+}
+
 
 func main() {
 	fileNameArg := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
@@ -74,10 +100,11 @@ func main() {
 	fileName := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [3]TestFunction{
+	testFunctions := [4]TestFunction{
 		{name: "OS.ReadFile", fun: readViaOSReadFile},
 		{name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
 		{name: "bufio.Reader", fun: readViaBufIOReader},
+		{name: "bytes.Buffer", fun: readViaBytesBuffer},
 	}
 
 	// Create multiple testers, one for each test function.
@@ -100,7 +127,7 @@ func main() {
 	for i := 0; i < 3; i++ {
 		for i, testFunc := range testFunctions {
 			fmt.Println(testFunc.name, ":")
-			secondsToTry := uint32(2)
+			secondsToTry := uint32(4)
 			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
 			testFunc.fun(testers[i], fileName, byteCount)
 			fmt.Println("")

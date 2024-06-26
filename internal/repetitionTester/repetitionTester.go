@@ -1,3 +1,6 @@
+// Used to profile code repeatedly to find the "stars align" best-possible speed over
+// many runs.
+
 package repetitionTester
 
 import (

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -8,13 +9,7 @@ import (
 	"tmelot.jsonparser/internal/repetitionTester"
 )
 
-func readViaOSStat(rt *repetitionTester.RepetitionTester, fileName string) {
-	// Get file size for bandwidth calculation purposes.
-	// fileInfo, err := os.Stat(fileName)
-	// if err != nil {
-	// 	fmt.Println("Error:", err)
-	// }
-
+func readViaOSStat(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
 	for rt.IsTesting() {
 		// Read file
 		rt.BeginTime()
@@ -24,18 +19,30 @@ func readViaOSStat(rt *repetitionTester.RepetitionTester, fileName string) {
 			msg := fmt.Sprintln("Error:", err)
 			panic(msg)
 		}
+		rt.CountBytes(byteCount)
 	}
 }
 
 func main() {
+	fileNameArg := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	flag.Parse()
+	fileName := *fileNameArg
+
 	rt := repetitionTester.NewRepetitionTester()
 	cpuFreq := profiler.EstimateCPUTimerFreq(false)
 
+	// Get file size for bandwidth calculation purposes.
+	fileInfo, err := os.Stat(fileName)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	byteCount := uint64(fileInfo.Size())
+
 	for i := 0; i < 3; i++ {
-		bytes := uint64(0)
-		secondsToTry := uint32(1)
-		rt.NewTestWave(bytes, cpuFreq, secondsToTry)
-		readViaOSStat(rt, "../../pairs.json")
+		// bytes := uint64(0)
+		secondsToTry := uint32(2)
+		rt.NewTestWave(byteCount, cpuFreq, secondsToTry)
+		readViaOSStat(rt, fileName, byteCount)
 		fmt.Println("=========================================")
 	}
 

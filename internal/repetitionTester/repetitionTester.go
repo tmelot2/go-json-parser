@@ -57,10 +57,10 @@ func (rt *RepetitionTester) NewTestWave(targetProcessedByteCount, cpuTimerFreq u
 
 	if rt.testMode == TestMode_Uninitialized {
 		rt.testMode = TestMode_Testing
-		rt.targetProcessedByteCount = targetProcessedByteCount
-		rt.cpuTimerFreq = cpuTimerFreq
 		rt.printNewMinimums = true
 		rt.results.minTime = math.MaxUint64 - 1
+		rt.targetProcessedByteCount = targetProcessedByteCount
+		rt.cpuTimerFreq = cpuTimerFreq
 	} else if rt.testMode == TestMode_Completed {
 		rt.testMode = TestMode_Testing
 
@@ -86,6 +86,10 @@ func (rt *RepetitionTester) BeginTime() {
 func (rt *RepetitionTester) EndTime() {
 	rt.closeBlockCount += 1
 	rt.timeAccumulatedOnThisTest += profiler.ReadCPUTimer()
+}
+
+func (rt *RepetitionTester) CountBytes(byteCount uint64) {
+	rt.bytesAccumulatedOnThisTest += byteCount
 }
 
 func (rt *RepetitionTester) IsTesting() bool {

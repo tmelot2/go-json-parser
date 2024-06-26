@@ -99,12 +99,12 @@ func main() {
 
 	// Get input args
 	profiler.GlobalProfiler.StartBlock("Startup")
-	inputFileArg := flag.String("input", "../../pairs.json", "Name of input file containing point pairs")
+	fileNameArg := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
 	flag.Parse()
 	profiler.GlobalProfiler.EndBlock("Startup")
 
 	// Read JSON file
-	data, err := readEntireFile(*inputFileArg)
+	data, err := readEntireFile(*fileNameArg)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return

@@ -24,11 +24,13 @@ type PROCESS_MEMORY_COUNTERS struct {
     PeakPagefileUsage          uintptr
 }
 
+// Declare syscalls for getting GetProcessMemoryInfo.
 var (
 	psapi                    = syscall.NewLazyDLL("psapi.dll")
 	procGetProcessMemoryInfo = psapi.NewProc("GetProcessMemoryInfo")
 )
 
+// Returns value of syscall result for page fault count.
 func GetPageFaultCount() (uint32, error) {
 	var memCounters PROCESS_MEMORY_COUNTERS
 	var err error

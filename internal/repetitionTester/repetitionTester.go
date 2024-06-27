@@ -59,7 +59,6 @@ func (rt *RepetitionTester) secondsFromCPUTime(cpuTime float64, cpuTimerFreq uin
 }
 
 func (rt *RepetitionTester) NewTestWave(targetProcessedByteCount, cpuTimerFreq uint64, secondsToTry uint32) {
-
 	if rt.testMode == TestMode_Uninitialized {
 		rt.testMode = TestMode_Testing
 		rt.printNewMinimums = true
@@ -133,7 +132,7 @@ func (rt *RepetitionTester) IsTesting() bool {
 					rt.testStartedAt = currentTime
 
 					if rt.printNewMinimums {
-						rt.PrintTime("Min", float64(results.minTime), rt.cpuTimerFreq, rt.bytesAccumulatedOnThisTest)
+						rt.PrintValue("Min", float64(results.minTime), rt.cpuTimerFreq, rt.bytesAccumulatedOnThisTest)
 						fmt.Printf("                       \r")
 					}
 				}
@@ -156,33 +155,35 @@ func (rt *RepetitionTester) IsTesting() bool {
 	return result
 }
 
-func (rt *RepetitionTester) PrintTime(label string, cpuTime float64, cpuTimerFreq, byteCount uint64) {
+func (rt *RepetitionTester) PrintValue(label string, cpuTime float64, cpuTimerFreq, byteCount uint64) {
 	fmt.Printf("%s: %.0f", label, cpuTime)
+
 	if cpuTimerFreq > 0 {
 		seconds := rt.secondsFromCPUTime(cpuTime, cpuTimerFreq)
 		fmt.Printf(" (%fms)", 1000.0*seconds)
 
 		if byteCount > 0 {
 			gigabyte := float64(1024.0 * 1024.0 * 1024.0)
-			bestBandwidth := float64(byteCount) / (gigabyte * seconds)
-			fmt.Printf(" %fgb/s", bestBandwidth)
+			bandwidth := float64(byteCount) / (gigabyte * seconds)
+			fmt.Printf(" %fgb/s", bandwidth)
 		}
 	}
 
-    if rt.pageFaultsAccumulatedOnThisTest > 0 {
-        fmt.Printf(" PF: %d (%0.4fk/fault)", rt.pageFaultsAccumulatedOnThisTest, float64(byteCount) / float64((uint64(rt.pageFaultsAccumulatedOnThisTest) * 1024.0)))
+	pfs := rt.pageFaultsAccumulatedOnThisTest
+    if pfs > 0 {
+        fmt.Printf(" PF: %d (%0.4fk/fault)", pfs, float64(byteCount) / (float64(pfs) * 1024.0))
     }
 }
 
 func (rt *RepetitionTester) PrintResults(results RepetitionTestResults, cpuTimerFreq, byteCount uint64) {
-	rt.PrintTime("Min", float64(results.minTime), cpuTimerFreq, byteCount)
+	rt.PrintValue("Min", float64(results.minTime), cpuTimerFreq, byteCount)
 	fmt.Println("")
 
-	rt.PrintTime("Max", float64(results.maxTime), cpuTimerFreq, byteCount)
+	rt.PrintValue("Max", float64(results.maxTime), cpuTimerFreq, byteCount)
 	fmt.Println("")
 
 	if results.testCount > 0 {
-		rt.PrintTime("Avg", float64(results.totalTime)/float64(results.testCount), cpuTimerFreq, byteCount)
+		rt.PrintValue("Avg", float64(results.totalTime)/float64(results.testCount), cpuTimerFreq, byteCount)
 		fmt.Println("")
 	}
 }

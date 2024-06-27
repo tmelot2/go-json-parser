@@ -31,7 +31,7 @@ var (
 )
 
 // Returns value of syscall result for page fault count.
-func GetPageFaultCount() (uint32, error) {
+func GetPageFaultCount() uint64 {
 	var memCounters PROCESS_MEMORY_COUNTERS
 	var err error
 
@@ -51,8 +51,8 @@ func GetPageFaultCount() (uint32, error) {
 		} else {
 			err = syscall.EINVAL
 		}
-		return 0, err
+		panic(err)
 	}
 
-	return memCounters.PageFaultCount, nil
+	return uint64(memCounters.PageFaultCount)
 }

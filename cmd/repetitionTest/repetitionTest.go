@@ -127,7 +127,7 @@ func main() {
 	// for true {
 		for i, testFunc := range testFunctions {
 			fmt.Println("---", testFunc.name, "---")
-			secondsToTry := uint32(3)
+			secondsToTry := uint32(2)
 			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
 			testFunc.fun(testers[i], fileName, byteCount)
 			fmt.Println("")

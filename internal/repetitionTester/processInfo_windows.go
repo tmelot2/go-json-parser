@@ -1,6 +1,6 @@
-package repetitionTester
+// +build windows
 
-// TODO: Make stub Darwin version until I figure that out.
+package repetitionTester
 
 import (
 	// "fmt"

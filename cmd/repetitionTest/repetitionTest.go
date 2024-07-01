@@ -12,7 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"unsafe"
+	// "unsafe"
 
 	"tmelot.jsonparser/internal/profiler"
 	"tmelot.jsonparser/internal/repetitionTester"
@@ -49,9 +49,9 @@ type ReadParams struct {
 func writeToAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		destBuffer := params.dest
-		fmt.Println("before: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
+		// fmt.Println("before: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
 		handleAllocation(params, &destBuffer)
-		fmt.Println("after: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
+		// fmt.Println("after: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
 
 		rt.BeginTime()
 		for i := 0; i < len(destBuffer); i++ {
@@ -98,23 +98,23 @@ func readViaOSReadFull(rt *repetitionTester.RepetitionTester, params *ReadParams
 	}
 }
 
-func readViaIOUtilReadFile(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+func readViaIOUtilReadFile(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
 		rt.BeginTime()
-		_, err := ioutil.ReadFile(fileName)
+		_, err := ioutil.ReadFile(params.fileName)
 		rt.EndTime()
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len((params.dest))))
 	}
 }
 
-func readViaBufIOReader(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+func readViaBufIOReader(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
-		file, err := os.Open(fileName)
+		file, err := os.Open(params.fileName)
 		if err != nil {
 			HandleError(err)
 		}
@@ -127,14 +127,14 @@ func readViaBufIOReader(rt *repetitionTester.RepetitionTester, fileName string, 
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len(params.dest)))
 	}
 }
 
-func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
-		file, err := os.Open(fileName)
+		file, err := os.Open(params.fileName)
 		if err != nil {
 			HandleError(err)
 		}
@@ -147,7 +147,7 @@ func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, fileName string, 
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len(params.dest)))
 	}
 }
 
@@ -168,13 +168,13 @@ func main() {
 	fileName := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [2]TestFunction{
+	testFunctions := [5]TestFunction{
 		// {name: "OS.ReadFile", fun: readViaOSReadFile},
 		{name: "WriteToAllBytes", fun: writeToAllBytes},
 		{name: "OS.ReadFull", fun: readViaOSReadFull},
-		// {name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
-		// {name: "bufio.Reader", fun: readViaBufIOReader},
-		// {name: "bytes.Buffer", fun: readViaBytesBuffer},
+		{name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
+		{name: "bufio.Reader", fun: readViaBufIOReader},
+		{name: "bytes.Buffer", fun: readViaBytesBuffer},
 	}
 
 	// Create multiple testers, one for each test function.
@@ -204,7 +204,7 @@ func main() {
 		// for true {
 		for i, testFunc := range testFunctions {
 			fmt.Println("---", testFunc.name, "---")
-			secondsToTry := uint32(1)
+			secondsToTry := uint32(5)
 			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
 
 			testFunc.fun(testers[i], &params)

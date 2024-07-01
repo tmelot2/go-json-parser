@@ -19,7 +19,6 @@ import (
 )
 
 type AllocType int
-
 const (
 	AllocType_None AllocType = iota
 	AllocType_Malloc
@@ -163,18 +162,35 @@ func HandleError(err error) {
 }
 
 func main() {
-	fileNameArg := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	// Input args
+	fileNameArg  := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	allocTypeArg := flag.String("allocType", "none", "Alloc type, (none [default] or malloc)")
 	flag.Parse()
-	fileName := *fileNameArg
+	fileName  := *fileNameArg
+	allocType := *allocTypeArg
+	var useAllocType AllocType
+
+	// Set alloc type from input args
+	if allocType == "none" {
+		fmt.Println("Using alloc type: None")
+		useAllocType = AllocType_None
+	} else if allocType == "malloc" {
+		fmt.Println("Using alloc type: Malloc")
+		useAllocType = AllocType_Malloc
+	} else {
+		HandleError(errors.New("Unknown allocType"))
+	}
+	fmt.Println("")
 
 	// Table of test functions to test.
-	testFunctions := [5]TestFunction{
+	testFunctions := [2]TestFunction{
 		// {name: "OS.ReadFile", fun: readViaOSReadFile},
 		{name: "WriteToAllBytes", fun: writeToAllBytes},
+		// {name: "OS.ReadFull", fun: readViaOSReadFull},
 		{name: "OS.ReadFull", fun: readViaOSReadFull},
-		{name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
-		{name: "bufio.Reader", fun: readViaBufIOReader},
-		{name: "bytes.Buffer", fun: readViaBytesBuffer},
+		// {name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
+		// {name: "bufio.Reader", fun: readViaBufIOReader},
+		// {name: "bytes.Buffer", fun: readViaBytesBuffer},
 	}
 
 	// Create multiple testers, one for each test function.
@@ -193,8 +209,7 @@ func main() {
 	byteCount := uint64(fileInfo.Size())
 
 	params := ReadParams{
-		// allocType: AllocType_None,
-		allocType: AllocType_Malloc,
+		allocType: useAllocType,
 		dest:      make([]byte, byteCount),
 		fileName:  fileName,
 	}
@@ -204,7 +219,7 @@ func main() {
 		// for true {
 		for i, testFunc := range testFunctions {
 			fmt.Println("---", testFunc.name, "---")
-			secondsToTry := uint32(5)
+			secondsToTry := uint32(1)
 			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
 
 			testFunc.fun(testers[i], &params)

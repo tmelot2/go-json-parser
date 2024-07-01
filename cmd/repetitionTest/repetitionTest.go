@@ -6,26 +6,95 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"unsafe"
 
 	"tmelot.jsonparser/internal/profiler"
 	"tmelot.jsonparser/internal/repetitionTester"
 )
 
-func readViaOSReadFile(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+type AllocType int
+
+const (
+	AllocType_None AllocType = iota
+	AllocType_Malloc
+
+	AllocCount_Count
+)
+
+func handleAllocation(params *ReadParams, buffer *[]byte) {
+	switch params.allocType {
+	case AllocType_None:
+		// fmt.Println("    allocType = NONE")
+		break
+	case AllocType_Malloc:
+		// fmt.Println("    allocType = Malloc")
+		*buffer = make([]byte, len(params.dest))
+	default:
+		HandleError(errors.New("Unrecognized allocation type"))
+	}
+}
+
+type ReadParams struct {
+	allocType AllocType
+	dest      []byte
+	fileName  string
+}
+
+func writeToAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
+	for rt.IsTesting() {
+		destBuffer := params.dest
+		fmt.Println("before: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
+		handleAllocation(params, &destBuffer)
+		fmt.Println("after: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
+
+		rt.BeginTime()
+		for i := 0; i < len(destBuffer); i++ {
+			destBuffer[i] = uint8(i)
+		}
+		rt.EndTime()
+
+		rt.CountBytes(uint64(len(destBuffer)))
+	}
+}
+
+func readViaOSReadFile(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
 		rt.BeginTime()
-		_, err := os.ReadFile(fileName)
+		_, err := os.ReadFile(params.fileName)
 		rt.EndTime()
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len(params.dest)))
+	}
+}
+
+func readViaOSReadFull(rt *repetitionTester.RepetitionTester, params *ReadParams) {
+	for rt.IsTesting() {
+		file, err := os.Open(params.fileName)
+		if err != nil {
+			HandleError(err)
+		}
+		defer file.Close()
+
+		// fmt.Printf("%p\n", params.dest)
+		buffer := params.dest
+		handleAllocation(params, &buffer)
+
+		rt.BeginTime()
+		_, err = io.ReadFull(file, buffer)
+		rt.EndTime()
+		if err != nil {
+			HandleError(err)
+		}
+		rt.CountBytes(uint64(len(buffer)))
 	}
 }
 
@@ -82,7 +151,7 @@ func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, fileName string, 
 	}
 }
 
-type ReadOverheadTestFunc func(*repetitionTester.RepetitionTester, string, uint64)
+type ReadOverheadTestFunc func(*repetitionTester.RepetitionTester, *ReadParams)
 type TestFunction struct {
 	name string
 	fun  ReadOverheadTestFunc
@@ -93,23 +162,24 @@ func HandleError(err error) {
 	panic(msg)
 }
 
-
 func main() {
 	fileNameArg := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
 	flag.Parse()
 	fileName := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [4]TestFunction{
-		{name: "OS.ReadFile", fun: readViaOSReadFile},
-		{name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
-		{name: "bufio.Reader", fun: readViaBufIOReader},
-		{name: "bytes.Buffer", fun: readViaBytesBuffer},
+	testFunctions := [2]TestFunction{
+		// {name: "OS.ReadFile", fun: readViaOSReadFile},
+		{name: "WriteToAllBytes", fun: writeToAllBytes},
+		{name: "OS.ReadFull", fun: readViaOSReadFull},
+		// {name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
+		// {name: "bufio.Reader", fun: readViaBufIOReader},
+		// {name: "bytes.Buffer", fun: readViaBytesBuffer},
 	}
 
 	// Create multiple testers, one for each test function.
 	var testers [len(testFunctions)]*repetitionTester.RepetitionTester
-	for i,_ := range testers {
+	for i, _ := range testers {
 		testers[i] = repetitionTester.NewRepetitionTester()
 	}
 
@@ -122,14 +192,22 @@ func main() {
 	}
 	byteCount := uint64(fileInfo.Size())
 
+	params := ReadParams{
+		// allocType: AllocType_None,
+		allocType: AllocType_Malloc,
+		dest:      make([]byte, byteCount),
+		fileName:  fileName,
+	}
+
 	// Run tests!
 	for i := 0; i < 1; i++ {
-	// for true {
+		// for true {
 		for i, testFunc := range testFunctions {
 			fmt.Println("---", testFunc.name, "---")
-			secondsToTry := uint32(2)
+			secondsToTry := uint32(1)
 			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
-			testFunc.fun(testers[i], fileName, byteCount)
+
+			testFunc.fun(testers[i], &params)
 			fmt.Println("")
 		}
 		fmt.Println("=========================================")

@@ -19,7 +19,6 @@ import (
 )
 
 type AllocType int
-
 const (
 	AllocType_None AllocType = iota
 	AllocType_Malloc
@@ -98,23 +97,23 @@ func readViaOSReadFull(rt *repetitionTester.RepetitionTester, params *ReadParams
 	}
 }
 
-func readViaIOUtilReadFile(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+func readViaIOUtilReadFile(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
 		rt.BeginTime()
-		_, err := ioutil.ReadFile(fileName)
+		_, err := ioutil.ReadFile(params.fileName)
 		rt.EndTime()
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len((params.dest))))
 	}
 }
 
-func readViaBufIOReader(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+func readViaBufIOReader(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
-		file, err := os.Open(fileName)
+		file, err := os.Open(params.fileName)
 		if err != nil {
 			HandleError(err)
 		}
@@ -127,14 +126,14 @@ func readViaBufIOReader(rt *repetitionTester.RepetitionTester, fileName string, 
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len(params.dest)))
 	}
 }
 
-func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, fileName string, byteCount uint64) {
+func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		// Read file
-		file, err := os.Open(fileName)
+		file, err := os.Open(params.fileName)
 		if err != nil {
 			HandleError(err)
 		}
@@ -147,7 +146,7 @@ func readViaBytesBuffer(rt *repetitionTester.RepetitionTester, fileName string, 
 		if err != nil {
 			HandleError(err)
 		}
-		rt.CountBytes(byteCount)
+		rt.CountBytes(uint64(len(params.dest)))
 	}
 }
 
@@ -163,14 +162,31 @@ func HandleError(err error) {
 }
 
 func main() {
-	fileNameArg := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	// Input args
+	fileNameArg  := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	allocTypeArg := flag.String("allocType", "none", "Alloc type, (none [default] or malloc)")
 	flag.Parse()
-	fileName := *fileNameArg
+	fileName  := *fileNameArg
+	allocType := *allocTypeArg
+	var useAllocType AllocType
+
+	// Set alloc type from input args
+	if allocType == "none" {
+		fmt.Println("Using alloc type: None")
+		useAllocType = AllocType_None
+	} else if allocType == "malloc" {
+		fmt.Println("Using alloc type: Malloc")
+		useAllocType = AllocType_Malloc
+	} else {
+		HandleError(errors.New("Unknown allocType"))
+	}
+	fmt.Println("")
 
 	// Table of test functions to test.
 	testFunctions := [2]TestFunction{
 		// {name: "OS.ReadFile", fun: readViaOSReadFile},
 		{name: "WriteToAllBytes", fun: writeToAllBytes},
+		// {name: "OS.ReadFull", fun: readViaOSReadFull},
 		{name: "OS.ReadFull", fun: readViaOSReadFull},
 		// {name: "ioutil.ReadFile", fun: readViaIOUtilReadFile},
 		// {name: "bufio.Reader", fun: readViaBufIOReader},
@@ -193,8 +209,7 @@ func main() {
 	byteCount := uint64(fileInfo.Size())
 
 	params := ReadParams{
-		// allocType: AllocType_None,
-		allocType: AllocType_Malloc,
+		allocType: useAllocType,
 		dest:      make([]byte, byteCount),
 		fileName:  fileName,
 	}

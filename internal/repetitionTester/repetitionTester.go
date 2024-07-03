@@ -214,4 +214,6 @@ func (rt *RepetitionTester) PrintResults(results RepetitionTestResults, cpuTimer
 	fmt.Println("")
 	rt.PrintValue("Avg", results.total, cpuTimerFreq)
 	fmt.Println("")
+	fmt.Printf("Test Count: %d\n", results.total.e[RepValue_TestCount])
+	fmt.Println("")
 }

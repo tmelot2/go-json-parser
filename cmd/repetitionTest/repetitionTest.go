@@ -12,7 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"unsafe"
+	// "unsafe"
 
 	"tmelot.jsonparser/internal/profiler"
 	"tmelot.jsonparser/internal/repetitionTester"
@@ -49,9 +49,9 @@ type ReadParams struct {
 func writeToAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	for rt.IsTesting() {
 		destBuffer := params.dest
-		fmt.Println("before: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
+		// fmt.Println("before: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
 		handleAllocation(params, &destBuffer)
-		fmt.Println("after: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
+		// fmt.Println("after: data starts at ", unsafe.Pointer(&(destBuffer)[0]))
 
 		rt.BeginTime()
 		for i := 0; i < len(destBuffer); i++ {

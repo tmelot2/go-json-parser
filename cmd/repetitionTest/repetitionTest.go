@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"runtime/debug"
 	// "unsafe"
 
 	"tmelot.jsonparser/internal/profiler"
@@ -28,9 +29,14 @@ const (
 
 func handleAllocation(params *ReadParams, buffer *[]byte) {
 	switch params.allocType {
+	// No alloc each iteration, so memory should be reused & there should be zero to minimal
+	// page faults.
 	case AllocType_None:
 		// fmt.Println("    allocType = NONE")
 		break
+	// Does a "malloc" (currently make()) every iteration. Should result in many page faults,
+	// but make() reuses memory so it only look right when you turn off the GC with
+	// debug.SetGCPercent(-1).
 	case AllocType_Malloc:
 		// fmt.Println("    allocType = Malloc")
 		*buffer = make([]byte, len(params.dest))
@@ -162,6 +168,10 @@ func HandleError(err error) {
 }
 
 func main() {
+	// Turn off the garbage collector. This is a short-running app, & the testing needs to be done
+	// without the GC doing sensible things like reusing memory with make().
+	debug.SetGCPercent(-1)
+
 	// Input args
 	fileNameArg  := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
 	allocTypeArg := flag.String("allocType", "none", "Alloc type, (none [default] or malloc)")

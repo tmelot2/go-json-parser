@@ -30,7 +30,6 @@ import (
 	- When parsing objects or arrays: The the "outer" call parses the open brace/bracket, the "inner" call parses the next token
 */
 
-
 // Parses the given string & returns result.
 func ParseJson(fileData string) (*JsonValue, error) {
 	profiler.GlobalProfiler.StartBlock("Parser")
@@ -57,9 +56,9 @@ func ParseJson(fileData string) (*JsonValue, error) {
 }
 
 type Parser struct {
-	Debug 	 bool
-	Tokens  []Token
-	pos 	int
+	Debug  bool
+	Tokens []Token
+	pos    int
 }
 
 func newParser(tokens []Token) *Parser {
@@ -232,11 +231,18 @@ func (p *Parser) parseValue(valueToken *Token) (any, error) {
 				return result, err
 			}
 		} else {
-		// Int
+			// Int
 			result, err = strconv.Atoi(valueToken.Value)
 			if err != nil {
 				return result, err
 			}
+		}
+	// Value is a bool
+	case JsonBool:
+		if valueToken.Value == JSON_SYNTAX_BOOL_TRUE {
+			return true, err
+		} else if valueToken.Value == JSON_SYNTAX_BOOL_FALSE {
+			return false, err
 		}
 	default:
 		msg := fmt.Sprintf("Cannot parse value of unknown token \"%s\" (type %s)", valueToken.Value, valueToken.Type)

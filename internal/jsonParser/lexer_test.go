@@ -59,8 +59,12 @@ func TestLexerInvalidJson(t *testing.T) {
 	_, err = runLexerWithStr(`{"one: 1.111 "abcd"}`)
 	assert.NotNil(t, err, "Expected an error, did not error")
 
-	// Test for error with not-yet-implemented boolean
-	_, err = runLexerWithStr(`{"one": true}`)
+	// Test for invalid boolean error
+	_, err = runLexerWithStr(`{"one": trueee}`)
+	assert.NotNil(t, err, "Expected an error, did not error")
+
+	// Test for invalid boolean error
+	_, err = runLexerWithStr(`{"one": ffalse}`)
 	assert.NotNil(t, err, "Expected an error, did not error")
 }
 
@@ -93,4 +97,8 @@ func TestLexerTokenCounts(t *testing.T) {
 	result, _ = runLexerWithStr(`{"first": 1.00000000000002`)
 	floatVal, _ := strconv.ParseFloat(result[len(result)-1].Value, 64)
 	assert.Equal(t, floatVal, 1.00000000000002, "")
+
+	// Test with booleans
+	result, _ = runLexerWithStr(`{"one": true, "two": false}`)
+	assert.Equal(t, len(result), 9, "Expected to lex 9 tokens")
 }

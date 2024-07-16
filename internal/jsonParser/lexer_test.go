@@ -2,6 +2,8 @@ package jsonParser
 
 import (
 	"testing"
+
+	"tmelot.jsonparser/internal/assert"
 )
 
 func runLexerWithStr(s string) ([]Token, error) {
@@ -14,15 +16,11 @@ func runLexerWithStr(s string) ([]Token, error) {
 func TestLexerEmptyJson(t *testing.T) {
 	// Test empty
 	result, _ := runLexerWithStr("{}")
-	if len(result) != 2 {
-		t.Errorf("Expected to lex 2 tokens, lexed %d instead", len(result))
-	}
+	assert.Equal(t, len(result), 2, "Expected to lex 2 tokens")
 
 	// Test empty with empty array
 	result, _ = runLexerWithStr("{[]}")
-	if len(result) != 4 {
-		t.Errorf("Expected to lex 4 tokens, lexed %d instead", len(result))
-	}
+	assert.Equal(t, len(result), 4, "Expected to lex 4 tokens")
 
 	// Test lots of nested empty objects & arrays
 	result, _ = runLexerWithStr("{[[[{{[{[{[]}]}]}}]]]}")

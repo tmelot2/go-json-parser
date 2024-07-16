@@ -13,7 +13,7 @@ import (
 */
 
 // JSON syntax
-const JSON_SYNTAX_WHITESPACE = " \n\t"
+const JSON_SYNTAX_WHITESPACE = " \n\r\t"
 const JSON_SYNTAX_LEFT_BRACE = "{"
 const JSON_SYNTAX_RIGHT_BRACE = "}"
 const JSON_SYNTAX_LEFT_BRACKET = "["

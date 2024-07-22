@@ -13,7 +13,7 @@ import (
 */
 
 // JSON syntax
-const JSON_SYNTAX_WHITESPACE = " \n\t"
+const JSON_SYNTAX_WHITESPACE = " \n\r\t"
 const JSON_SYNTAX_LEFT_BRACE = "{"
 const JSON_SYNTAX_RIGHT_BRACE = "}"
 const JSON_SYNTAX_LEFT_BRACKET = "["
@@ -21,31 +21,34 @@ const JSON_SYNTAX_RIGHT_BRACKET = "]"
 const JSON_SYNTAX_COLON = ":"
 const JSON_SYNTAX_COMMA = ","
 const JSON_SYNTAX_QUOTE = "\""
+const JSON_SYNTAX_BOOL_TRUE = "true"
+const JSON_SYNTAX_BOOL_FALSE = "false"
 
 // Identifies which type of JSON syntax the token represents
 type TokenType string
+
 const (
-	JsonObjectStart TokenType = "ObjectStart"
-	JsonObjectEnd TokenType = "ObjectEnd"
-	JsonArrayStart TokenType = "ArrayStart"
-	JsonArrayEnd TokenType = "ArrayEnd"
+	JsonObjectStart     TokenType = "ObjectStart"
+	JsonObjectEnd       TokenType = "ObjectEnd"
+	JsonArrayStart      TokenType = "ArrayStart"
+	JsonArrayEnd        TokenType = "ArrayEnd"
 	JsonFieldAssignment TokenType = "FieldAssignment"
-	JsonFieldSeparator TokenType = "FieldSeparator"
-	JsonString TokenType = "String"
-	JsonNumber TokenType = "Number"
-	// TODO: True, False, Null
+	JsonFieldSeparator  TokenType = "FieldSeparator"
+	JsonString          TokenType = "String"
+	JsonNumber          TokenType = "Number"
+	JsonBool            TokenType = "Bool"
 )
 
 // Represents a lexed token
 type Token struct {
-	Type	TokenType
-	Value 	string
+	Type  TokenType
+	Value string
 }
 
 type Lexer struct {
-	Debug 	 bool
-	data 	 string
-	pos 	 int
+	Debug bool
+	data  string
+	pos   int
 }
 
 // Create & return a new Lexer instance
@@ -106,8 +109,15 @@ func (l *Lexer) lex() ([]Token, error) {
 			continue
 		}
 
-		// TODO: Lex bools
-		// TODO: Lex null
+		// Lex bools
+		boolToken, boolCharsRead := l.lexBool()
+		if boolCharsRead > 0 {
+			tokens = append(tokens, *boolToken)
+			l.pos += boolCharsRead
+			continue
+		}
+
+		// TODO: Lex null?
 
 		err = errors.New(fmt.Sprintf("Unexpected character \"%s\"", l.getUnlexedData()))
 		return tokens, err
@@ -122,10 +132,10 @@ func (l *Lexer) lex() ([]Token, error) {
 func (l *Lexer) lexJsonWhitespace() int {
 	numCharsRead := 0
 
-	for _,s := range l.getUnlexedData() {
+	for _, s := range l.getUnlexedData() {
 		foundWhitespace := false
 		l.DebugPrintf("Scanning char %c for whitespace\n", s)
-		for _,ws := range JSON_SYNTAX_WHITESPACE {
+		for _, ws := range JSON_SYNTAX_WHITESPACE {
 			if s == ws {
 				l.DebugPrintf("	Match! %c is whitespace\n", s)
 				numCharsRead += 1
@@ -192,7 +202,7 @@ func (l *Lexer) lexString() (*Token, int, error) {
 	}
 
 	// Scan string until we find closing quote
-	for _,c := range s {
+	for _, c := range s {
 		l.DebugPrintf("Checking %c for string...\n", c)
 		if string(c) == JSON_SYNTAX_QUOTE {
 			numCharsRead += 1
@@ -216,7 +226,7 @@ func (l *Lexer) lexNumber() (*Token, int) {
 	lexedStr := ""
 	numCharsRead := 0
 
-	for _,c := range s {
+	for _, c := range s {
 		l.DebugPrintf("Checking %c for number... ", c)
 		isDigit := c >= '0' && c <= '9'
 		isSymbol := c == '-' || c == '.'
@@ -236,8 +246,23 @@ func (l *Lexer) lexNumber() (*Token, int) {
 	}
 }
 
-// TODO: Scans for bools (true or false) & returns it along with number of characters consumed.
-// func (l *Lexer) lexBool() (*Token, int) {
+// Looks for bool literals & returns it along with the number of characters consumed.
+func (l *Lexer) lexBool() (*Token, int) {
+	s := l.getUnlexedData()
+
+	// Not a bool if remaining string is shorter than possible bool values
+	if len(s) < len(JSON_SYNTAX_BOOL_TRUE) || len(s) < len(JSON_SYNTAX_BOOL_FALSE) {
+		return nil, 0
+	}
+
+	if s[:4] == JSON_SYNTAX_BOOL_TRUE {
+		return &Token{Type: JsonBool, Value: JSON_SYNTAX_BOOL_TRUE},  len(JSON_SYNTAX_BOOL_TRUE)
+	} else if s[:5] == JSON_SYNTAX_BOOL_FALSE {
+		return &Token{Type: JsonBool, Value: JSON_SYNTAX_BOOL_FALSE}, len(JSON_SYNTAX_BOOL_FALSE)
+	}
+
+	return nil, 0
+}
 
 func (l *Lexer) DebugPrintf(format string, a ...interface{}) {
 	if l.Debug {

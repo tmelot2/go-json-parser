@@ -1,8 +1,10 @@
 package jsonParser
 
 import (
-	"fmt"
+	// "fmt"
 	"testing"
+
+	"tmelot.jsonparser/internal/assert"
 )
 
 func runParserWithStr(s string) (*JsonValue, error) {
@@ -13,117 +15,88 @@ func runParserWithStr(s string) (*JsonValue, error) {
 func TestParserInvalidJson(t *testing.T) {
 	// Test empty string
 	_, err := runParserWithStr("")
-	if err == nil {
-		t.Error("Expected parser error for blank JSON, did not error")
-	}
+	assert.NotNil(t, err, "Expected error for blank JSON, did not error")
 
 	// Test missing start JSON
 	_, err = runParserWithStr("}")
-	if err == nil {
-		t.Error("Expected parser error on missing end JSON close brace, did not error")
-	}
+	assert.NotNil(t, err, "Expected error on missing start JSON open brace, did not error")
 
 	// Test missing start JSON
 	_, err = runParserWithStr(`"hello": "world"}`)
-	if err == nil {
-		t.Error("Expected parser error on missing end JSON close brace, did not error")
-	}
+	assert.NotNil(t, err, "Expected error on missing start JSON open brace, did not error")
 
 	// Test missing end JSON
 	_, err = runParserWithStr("{")
-	if err == nil {
-		t.Error("Expected parser error on missing end JSON close brace, did not error")
-	}
+	assert.NotNil(t, err, "Expected error on missing end JSON close brace, did not error")
 
 	// Test missing field assignment ":"
 	_, err = runParserWithStr(`{"hello" "world"}`)
-	if err == nil {
-		t.Error("Expected parser error on missing field assignment \":\", did not error")
-	}
+	assert.NotNil(t, err, "Expected error on missing field assignment \":\", did not error")
 
 	// Test missing field separator ","
 	_, err = runParserWithStr(`{ "a": 1 "b": 2 }`)
-	if err == nil {
-		t.Error("Expected parser error on missing field separator \",\", did not error")
-	}
+	assert.NotNil(t, err, "Expected error on missing field separator \",\", did not error")
 
 	// Test missing quote on key
 	_, err = runParserWithStr(`{ a: 1 }`)
-	if err == nil {
-		t.Error("Expected parser error on missing field separator \",\", did not error")
-	}
+	assert.NotNil(t, err, "Expected error on missing quotes around key, did not error")
 
 	// Test invalid object trailing comma
 	_, err = runParserWithStr(`{ "a": 1, "b": 2, }`)
-	if err == nil {
-		t.Error("Expected parser error on missing field separator \",\", did not error")
-	}
+	assert.NotNil(t, err, "Expected error on trailing comma, did not error")
 
 	// Test invalid array trailing comma
 	_, err = runParserWithStr(`{ "a": [1,2,] }`)
-	if err == nil {
-		t.Error("Expected parser error on trailing array comma")
-	}
+	assert.NotNil(t, err, "Expected error on trailing array comma, did not error")
 
 	// Test invalid array trailing commaa
 	_, err = runParserWithStr(`{ "a": [1,2,,] }`)
-	if err == nil {
-		t.Error("Expected parser error on multiple trailing array commas")
-	}
+	assert.NotNil(t, err, "Expected error on multiple trailing array commas, did not error")
 }
 
 func TestParserValidJson(t *testing.T) {
 	// Test valid JSON with 1 string
 	result, _ := runParserWithStr(`{ "a": "1" }`)
 	val, _ := result.GetString("a")
-	if val != "1" {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	assert.Equal(t, val, "1")
 
 	// Test valid JSON with multiple strings
 	result, _ = runParserWithStr(`{ "a": "1", "b": "2" }`)
 	resultA, _ := result.GetString("a")
 	resultB, _ := result.GetString("b")
-	if resultA != "1" || resultB != "2" {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	assert.Equal(t, resultA, "1")
+	assert.Equal(t, resultB, "2")
 
 	// Test valid JSON with one int
 	result, _ = runParserWithStr(`{ "a": 1 }`)
-	if resultA2,_ := result.GetInt("a"); resultA2 != 1 {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	resultA2, _ := result.GetInt("a")
+	assert.Equal(t, resultA2, 1)
 
 	// Test valid JSON with multiple ints
 	result, _ = runParserWithStr(`{ "a": 1, "b": 2 }`)
 	resultAInt, _ := result.GetInt("a")
 	resultBInt, _ := result.GetInt("b")
-	if resultAInt != 1 || resultBInt != 2 {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	assert.Equal(t, resultAInt, 1)
+	assert.Equal(t, resultBInt, 2)
 
 	// Test valid JSON with one float
 	result, _ = runParserWithStr(`{ "a": 1.11 }`)
-	if resultFloat, _ := result.GetFloat("a"); resultFloat != 1.11 {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	resultFloat, _ := result.GetFloat("a")
+	assert.Equal(t, resultFloat, 1.11)
 
 	// Test valid JSON with multiple floats
 	result, _ = runParserWithStr(`{ "a": 1.11, "b": 2.22 }`)
 	resultMultiFloatA, _ := result.GetFloat("a")
 	resultMultiFloatB, _ := result.GetFloat("b")
-	if resultMultiFloatA != 1.11 || resultMultiFloatB != 2.22 {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	assert.Equal(t, resultMultiFloatA, 1.11)
+	assert.Equal(t, resultMultiFloatB, 2.22)
 
 	// Test valid JSON with nested object
 	result, _ = runParserWithStr(`{ "a": { "b": { "c": 1 } } }`)
 	objA, _ := result.GetObject("a")
 	objB, _ := objA.GetObject("b")
 	c, _ := objB.GetInt("c")
-	if c != 1 {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	assert.Equal(t, c, 1)
 
 	// Test valid JSON with array
 	result, _ = runParserWithStr(`{
@@ -135,7 +108,35 @@ func TestParserValidJson(t *testing.T) {
 	arr, _ := result.GetArray("best_games")
 	noita, _ := arr[0].GetInt("rank")
 	smash, _ := arr[1].GetInt("rank")
-	if noita != 1 || smash != 2 {
-		t.Error(fmt.Sprintf("Unexpected parsed result: %s", result))
-	}
+	assert.Equal(t, noita, 1)
+	assert.Equal(t, smash, 2)
+
+	// Test JSON with all field types
+	result, _ = runParserWithStr(`{
+		"str": "string",
+		"int": 1,
+		"obj": {
+			"str": "obj.string",
+			"int": 12
+		},
+		"arr": [11,22,33]
+	}`)
+	strVal, _ := result.GetString("str")
+	intVal, _ := result.GetInt("int")
+	assert.Equal(t, strVal, "string")
+	assert.Equal(t, intVal, 1)
+
+	objVal, _ := result.GetObject("obj")
+	strVal, _ = objVal.GetString("str")
+	intVal, _ = objVal.GetInt("int")
+	assert.Equal(t, strVal, "obj.string")
+	assert.Equal(t, intVal, 12)
+
+	arrVal, _ := result.GetArray("arr")
+	arr0, _ := arrVal[0].GetInt("")
+	arr1, _ := arrVal[1].GetInt("")
+	arr2, _ := arrVal[2].GetInt("")
+	assert.Equal(t, arr0, 11)
+	assert.Equal(t, arr1, 22)
+	assert.Equal(t, arr2, 33)
 }

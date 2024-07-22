@@ -11,7 +11,6 @@ import (
 )
 
 type TestMode int
-
 const (
 	TestMode_Uninitialized TestMode = iota
 	TestMode_Testing
@@ -19,11 +18,29 @@ const (
 	TestMode_Error
 )
 
+type RepetitionValueType int
+const (
+	RepValue_TestCount RepetitionValueType = iota
+
+	RepValue_CPUTimer
+	RepValue_MemPageFaults
+	RepValue_ByteCount
+
+	RepValue_Count
+)
+
+type RepetitionValue struct {
+	e [RepValue_Count]uint64
+}
+
 type RepetitionTestResults struct {
-	testCount uint64
-	totalTime uint64
-	minTime   uint64
-	maxTime   uint64
+	// testCount uint64
+	// totalTime uint64
+	// minTime   uint64
+	// maxTime   uint64
+	total RepetitionValue
+	min   RepetitionValue
+	max   RepetitionValue
 }
 
 type RepetitionTester struct {
@@ -32,13 +49,12 @@ type RepetitionTester struct {
 	tryForTime               uint64
 	testStartedAt            uint64
 
-	testMode                   TestMode
-	printNewMinimums           bool
-	openBlockCount             uint64
-	closeBlockCount            uint64
-	timeAccumulatedOnThisTest  uint64
-	bytesAccumulatedOnThisTest uint64
+	testMode                        TestMode
+	printNewMinimums                bool
+	openBlockCount                  uint64
+	closeBlockCount                 uint64
 
+	accumulatedOnThisTest RepetitionValue
 	results RepetitionTestResults
 }
 
@@ -57,13 +73,12 @@ func (rt *RepetitionTester) secondsFromCPUTime(cpuTime float64, cpuTimerFreq uin
 }
 
 func (rt *RepetitionTester) NewTestWave(targetProcessedByteCount, cpuTimerFreq uint64, secondsToTry uint32) {
-
 	if rt.testMode == TestMode_Uninitialized {
 		rt.testMode = TestMode_Testing
-		rt.printNewMinimums = true
-		rt.results.minTime = math.MaxUint64 - 1
 		rt.targetProcessedByteCount = targetProcessedByteCount
 		rt.cpuTimerFreq = cpuTimerFreq
+		rt.printNewMinimums = true
+		rt.results.min.e[RepValue_CPUTimer] = math.MaxUint64 - 1
 	} else if rt.testMode == TestMode_Completed {
 		rt.testMode = TestMode_Testing
 
@@ -83,20 +98,29 @@ func (rt *RepetitionTester) NewTestWave(targetProcessedByteCount, cpuTimerFreq u
 
 func (rt *RepetitionTester) BeginTime() {
 	rt.openBlockCount += 1
-	rt.timeAccumulatedOnThisTest -= profiler.ReadCPUTimer()
+
+	accum := &rt.accumulatedOnThisTest
+	accum.e[RepValue_MemPageFaults] -= GetPageFaultCount()
+	accum.e[RepValue_CPUTimer] -= profiler.ReadCPUTimer()
 }
 
 func (rt *RepetitionTester) EndTime() {
 	rt.closeBlockCount += 1
-	rt.timeAccumulatedOnThisTest += profiler.ReadCPUTimer()
+
+	accum := &rt.accumulatedOnThisTest
+	accum.e[RepValue_CPUTimer] += profiler.ReadCPUTimer()
+	accum.e[RepValue_MemPageFaults] += GetPageFaultCount()
 }
 
 func (rt *RepetitionTester) CountBytes(byteCount uint64) {
-	rt.bytesAccumulatedOnThisTest += byteCount
+	accum := &rt.accumulatedOnThisTest
+	// rt.bytesAccumulatedOnThisTest += byteCount
+	accum.e[RepValue_ByteCount] += byteCount
 }
 
 func (rt *RepetitionTester) IsTesting() bool {
 	if rt.testMode == TestMode_Testing {
+		accum := rt.accumulatedOnThisTest
 		currentTime := profiler.ReadCPUTimer()
 
 		if rt.openBlockCount > 0 {
@@ -104,43 +128,46 @@ func (rt *RepetitionTester) IsTesting() bool {
 			if rt.openBlockCount != rt.closeBlockCount {
 				panic("Unbalanced begin/end time blocks")
 			}
-			if rt.bytesAccumulatedOnThisTest != rt.targetProcessedByteCount {
+			// if rt.bytesAccumulatedOnThisTest != rt.targetProcessedByteCount {
+			if accum.e[RepValue_ByteCount] != rt.targetProcessedByteCount {
 				panic("Processed byte count mismatch")
 			}
 
 			if rt.testMode == TestMode_Testing {
-				// Increment test stuff.
-				elapsedTime := rt.timeAccumulatedOnThisTest
 				results := &rt.results
-				results.testCount += 1
-				results.totalTime += elapsedTime
+
+				// Increment results.
+				accum.e[RepValue_TestCount] = 1
+				for eIndex := 0; eIndex < len(accum.e); eIndex++ {
+					results.total.e[eIndex] += accum.e[eIndex]
+				}
 
 				// Set new max or min if found.
-				if results.maxTime < elapsedTime {
-					results.maxTime = elapsedTime
+				if results.max.e[RepValue_CPUTimer] < accum.e[RepValue_CPUTimer] {
+					results.max = accum
 				}
-				if results.minTime > elapsedTime {
-					results.minTime = elapsedTime
+				if results.min.e[RepValue_CPUTimer] > accum.e[RepValue_CPUTimer] {
+					results.min = accum
+
 					// New min time found, restart to full trial time.
 					rt.testStartedAt = currentTime
 
 					if rt.printNewMinimums {
-						rt.PrintTime("Min", float64(results.minTime), rt.cpuTimerFreq, rt.bytesAccumulatedOnThisTest)
-						fmt.Printf("                       \r")
+						rt.PrintValue("Min", results.min, rt.cpuTimerFreq)
+						fmt.Printf("                                   \r")
 					}
 				}
 
 				rt.openBlockCount = 0
 				rt.closeBlockCount = 0
-				rt.timeAccumulatedOnThisTest = 0
-				rt.bytesAccumulatedOnThisTest = 0
+				rt.accumulatedOnThisTest = RepetitionValue{}
 			}
 		}
 
 		if (currentTime - rt.testStartedAt) > rt.tryForTime {
 			rt.testMode = TestMode_Completed
-			fmt.Printf("                                    \r")
-			rt.PrintResults(rt.results, rt.cpuTimerFreq, rt.targetProcessedByteCount)
+			fmt.Printf("                                                          \r")
+			rt.PrintResults(rt.results, rt.cpuTimerFreq)
 		}
 	}
 
@@ -148,29 +175,45 @@ func (rt *RepetitionTester) IsTesting() bool {
 	return result
 }
 
-func (rt *RepetitionTester) PrintTime(label string, cpuTime float64, cpuTimerFreq, byteCount uint64) {
-	fmt.Printf("%s: %.0f", label, cpuTime)
+func (rt *RepetitionTester) PrintValue(label string, value RepetitionValue, cpuTimerFreq uint64) {
+	var divisor float64
+	testCount := value.e[RepValue_TestCount]
+	if testCount > 0 {
+		divisor = float64(testCount)
+	} else {
+		divisor = float64(1)
+	}
+
+	var e [RepValue_Count]float64
+	for eIndex := 0; eIndex < len(e); eIndex++ {
+		e[eIndex] = float64(value.e[eIndex]) / divisor
+	}
+
+	fmt.Printf("%s: %.0f", label, e[RepValue_CPUTimer])
 	if cpuTimerFreq > 0 {
-		seconds := rt.secondsFromCPUTime(cpuTime, cpuTimerFreq)
+		seconds := rt.secondsFromCPUTime(e[RepValue_CPUTimer], cpuTimerFreq)
 		fmt.Printf(" (%fms)", 1000.0*seconds)
 
-		if byteCount > 0 {
+		if e[RepValue_ByteCount] > 0 {
 			gigabyte := float64(1024.0 * 1024.0 * 1024.0)
-			bestBandwidth := float64(byteCount) / (gigabyte * seconds)
-			fmt.Printf(" %fgb/s", bestBandwidth)
+			bandwidth := float64(e[RepValue_ByteCount]) / (gigabyte * seconds)
+			fmt.Printf(" %fgb/s", bandwidth)
 		}
 	}
+
+	pfs := uint64(e[RepValue_MemPageFaults])
+    if pfs > 0 {
+        fmt.Printf(" PF: %d (%0.4fk/fault)", pfs, float64(e[RepValue_ByteCount]) / (float64(pfs) * 1024.0))
+    }
 }
 
-func (rt *RepetitionTester) PrintResults(results RepetitionTestResults, cpuTimerFreq, byteCount uint64) {
-	rt.PrintTime("Min", float64(results.minTime), cpuTimerFreq, byteCount)
+func (rt *RepetitionTester) PrintResults(results RepetitionTestResults, cpuTimerFreq uint64) {
+	rt.PrintValue("Min", results.min, cpuTimerFreq)
 	fmt.Println("")
-
-	rt.PrintTime("Max", float64(results.maxTime), cpuTimerFreq, byteCount)
+	rt.PrintValue("Max", results.max, cpuTimerFreq)
 	fmt.Println("")
-
-	if results.testCount > 0 {
-		rt.PrintTime("Avg", float64(results.totalTime)/float64(results.testCount), cpuTimerFreq, byteCount)
-		fmt.Println("")
-	}
+	rt.PrintValue("Avg", results.total, cpuTimerFreq)
+	fmt.Println("")
+	fmt.Printf("Test Count: %d\n", results.total.e[RepValue_TestCount])
+	fmt.Println("")
 }

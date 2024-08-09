@@ -1,2 +1,3 @@
 pairs*.json
 .DS_Store
+.vscode

@@ -129,7 +129,31 @@ func (j *JsonValue) GetFloat(key string) (float64, error) {
 		floatMsg := fmt.Sprintf(`Error casting "%s" to float`, val)
 		return 0, errors.New(floatMsg)
 	}
+
 	return floatVal, nil
+}
+
+// Returns a bool for the given key, or if the key is blank, returns own data as bool
+func (j *JsonValue) GetBool(key string) (bool, error) {
+	var val any
+	var err error
+
+	if key != "" {
+		val, err = j.getKeyValue(key)
+		if err != nil {
+			return false, errors.New(err.Error())
+		}
+	} else {
+		val = j.data
+	}
+
+	boolVal, ok := val.(bool)
+	if !ok {
+		msg := fmt.Sprintf(`Error casting "%s" to float`, val)
+		return false, errors.New(msg)
+	}
+
+	return boolVal, nil
 }
 
 // Returns a *JsonValue for the given key, or if key is blank, returns own data as *JsonValue

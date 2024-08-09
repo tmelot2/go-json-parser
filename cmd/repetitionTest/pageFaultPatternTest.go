@@ -12,15 +12,15 @@ import (
 	// "io/ioutil"
 	// "os"
 	"runtime/debug"
-	// // "unsafe"
+	// "unsafe"
 
 	// "tmelot.jsonparser/internal/profiler"
 	"tmelot.jsonparser/internal/repetitionTester"
 )
 
-func handleAllocation(size int) *[]byte {
+func handleAllocation(size int) []byte {
 	buffer := make([]byte, size)
-	return &buffer
+	return buffer
 }
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 
 		startFaultCount := repetitionTester.GetPageFaultCount()
 		for i := 0; i < touchSize; i++ {
-			(*data)[i] = byte(i)
+			data[i] = byte(i)
 		}
 		endFaultCount := repetitionTester.GetPageFaultCount()
 		faultCount := int(endFaultCount - startFaultCount)

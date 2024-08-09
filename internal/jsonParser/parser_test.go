@@ -1,5 +1,9 @@
 package jsonParser
 
+/*
+	Tests the parser & JsonValue classes.
+*/
+
 import (
 	// "fmt"
 	"testing"
@@ -119,7 +123,9 @@ func TestParserValidJson(t *testing.T) {
 			"str": "obj.string",
 			"int": 12
 		},
-		"arr": [11,22,33]
+		"arr": [11,22,33],
+		"true": true,
+		"false": false
 	}`)
 	strVal, _ := result.GetString("str")
 	intVal, _ := result.GetInt("int")
@@ -139,4 +145,11 @@ func TestParserValidJson(t *testing.T) {
 	assert.Equal(t, arr0, 11)
 	assert.Equal(t, arr1, 22)
 	assert.Equal(t, arr2, 33)
+
+	trueVal, _ := result.GetBool("true")
+	falseVal, _ := result.GetBool("false")
+	assert.Equal(t, trueVal, true)
+	assert.Equal(t, falseVal, false)
+
+	assert.Finished()
 }

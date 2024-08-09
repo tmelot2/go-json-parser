@@ -1,6 +1,6 @@
-# Go JSON Parser with Haversine Calculator
+# Go JSON Parser + "Performance-Aware Programming" Coursework
 
-A Haversine calculator that uses a from-scratch, eventually highly-performance JSON parser written in Go. It's a project for the ["Performance-Aware Programming" course](https://www.computerenhance.com) I am taking.
+This project is coursework for the ["Performance-Aware Programming" course](https://www.computerenhance.com) I'm taking. The core app is a Haversine calculator that uses a from-scratch, eventually highly-performance JSON parser written in Go.
 
 Project pieces:
 
@@ -11,7 +11,7 @@ Project pieces:
 
 Still a work-in-progress.
 
-Created with Go 1.22.1, no external dependencies.
+Created with Go 1.22.1 with minimal dependencies.
 
 ## Usage
 
@@ -82,44 +82,42 @@ Total time: 7,248.6769ms (CPU freq  3,700,051,600 Hz)
 A run that repeatedly loads 10 million pairs:
 
 ```
-OS.ReadFile :
-Min: 715707021 (193.432730ms) 5.282137gb/s
-Max: 2174110084 (587.592460ms) 1.738855gb/s
-Avg: 759530706 (205.276871ms) 4.977367gb/s
+Using alloc type: None
 
-ioutil.ReadFile :
-Min: 721926739 (195.113721ms) 5.236629gb/s
-Max: 828885191 (224.021172ms) 4.560900gb/s
-Avg: 738089858 (199.482096ms) 5.121955gb/s
+--- OS.ReadFile ---
+Min: 888444 (0.240113ms) 4.292762gb/s PF: 272 (3.9736k/fault)
+Max: 3351756 (0.905853ms) 1.137875gb/s PF: 278 (3.8878k/fault)
+Avg: 1203035 (0.325135ms) 3.170215gb/s PF: 272 (3.9736k/fault)
 
-bufio.Reader :
-Min: 1440673033 (389.367870ms) 2.624095gb/s
-Max: 1864848749 (504.009007ms) 2.027222gb/s
-Avg: 1495594008 (404.211254ms) 2.527733gb/s
+--- WriteToAllBytes ---
+Min: 1661892 (0.449146ms) 2.294902gb/s
+Max: 2981037 (0.805661ms) 1.279380gb/s
+Avg: 1751498 (0.473363ms) 2.177495gb/s
 
-bytes.Buffer :
-Min: 1456971513 (393.772828ms) 2.594740gb/s
-Max: 10149646361 (2743.124979ms) 0.372472gb/s
-Avg: 1823100121 (492.725687ms) 2.073645gb/s
+--- ioutil.ReadFile ---
+Min: 887371 (0.239823ms) 4.297953gb/s PF: 271 (3.9883k/fault)
+Max: 2685497 (0.725788ms) 1.420176gb/s PF: 272 (3.9736k/fault)
+Avg: 1183749 (0.319922ms) 3.221866gb/s PF: 272 (3.9736k/fault)
 ```
 
 
 ## Progress
 
 - Parser
-	- It works!
-	- Supported types: Object, array, string, int, float. Missing: bool.
-	- Parsed data is of type JsonValue, which you can use to pick out typed data.
+	- Works!
+	- Supported types: Object, array, string, int, float, bool.
+	- Parsed data is type `JsonValue`, which you can use to get typed data.
 	- There are unit tests for the lexer & parser, which will continue to be expanded.
 	- Currently ~9x slower than Go's builtin parser. GOOD, lots of room for improvement!
+	- See `./internal/jsonParser/jsonValue.go` for usage.
 - Block profiler
-	- It also works! And it's so cool to use it!
+	- Also works! And it's so cool to use it!
 	- For each block, measures CPU cycles, hit count, & optionally memory bandwidth.
 	- Supports nested profiled blocks.
 	- TODO: Support recursive profiled blocks. You can do this now, but the numbers get crazy & meaningless.
 - Repetition tester
-	- It also also works!
-	- Repeatedly measures calls to different Go stl file read functions in order to find the "stars align" best-case speed.
+	- Also also works!
+	- Repeatedly measures calls to different Go stl file read functions in order to find the "stars align" best-case speed. Outputs best, worse, & average.
 
 ## Todo
 

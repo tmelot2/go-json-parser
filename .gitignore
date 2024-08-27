@@ -1,5 +1,5 @@
 pairs*.json
 .DS_Store
 .vscode
-.obj
-.lib
+*.obj
+*.lib

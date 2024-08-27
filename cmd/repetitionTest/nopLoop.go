@@ -9,6 +9,8 @@ package main
 
 typedef char u8;
 typedef long long unsigned u64;
+
+// Prototypes
 void MOVAllBytesASM(u64 count, u8 *data);
 void NOPAllBytesASM(u64 count);
 void CMPAllBytesASM(u64 count);

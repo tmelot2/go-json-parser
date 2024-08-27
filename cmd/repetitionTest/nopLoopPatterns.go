@@ -1,4 +1,6 @@
-// Tests memory touch speed vs different forms of reduced instructions.
+// Tests different implementations of NOP loops to illustrate CPU front end bottlenecks.
+// TODO: Simplify by removing wrapper funcs
+// TODO: Do asm
 
 package main
 
@@ -9,14 +11,18 @@ package main
 // Linker flags: -L. look for libraries in cur dir. -ltheName link against file "theName".
 #cgo LDFLAGS: -L. -lnopLoop
 
+// Used as a generic wrapper so that we can all any asm routine without making a Go wrapper.
+#include <stdint.h>
+typedef void (*ASMFuncPtr)(uint64_t count, char* data);
+void callASMFunction(ASMFuncPtr func, uint64_t count, char* data) {
+    func(count, data);
+}
+
 typedef char u8;
 typedef long long unsigned u64;
 
 // Prototypes
 void MOVAllBytesASM(u64 count, u8 *data);
-void NOPAllBytesASM(u64 count);
-void CMPAllBytesASM(u64 count);
-void DECAllBytesASM(u64 count);
 */
 import "C"
 
@@ -63,47 +69,16 @@ func MOVAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
 	}
 }
 
-func NOPAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
-	for rt.IsTesting() {
-		destBuffer := params.dest
-		count := uint64(len(destBuffer))
-
-		rt.BeginTime()
-		C.NOPAllBytesASM(C.ulonglong(count))
-		rt.EndTime()
-		rt.CountBytes(uint64(len(destBuffer)))
-	}
-}
-
-func CMPAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
-	for rt.IsTesting() {
-		destBuffer := params.dest
-		count := uint64(len(destBuffer))
-
-		rt.BeginTime()
-		C.CMPAllBytesASM(C.ulonglong(count))
-		rt.EndTime()
-		rt.CountBytes(uint64(len(destBuffer)))
-	}
-}
-
-func DECAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
-	for rt.IsTesting() {
-		destBuffer := params.dest
-		count := uint64(len(destBuffer))
-
-		rt.BeginTime()
-		C.DECAllBytesASM(C.ulonglong(count))
-		rt.EndTime()
-		rt.CountBytes(uint64(len(destBuffer)))
-	}
-}
-
-
-type TestFunc func(*repetitionTester.RepetitionTester, *ReadParams)
+type ASMFunction func(count C.ulonglong, data *C.char)
 type TestFunction struct {
 	name string
-	fun  TestFunc
+	fun  ASMFunction
+}
+
+func wrapASMFunction(f unsafe.Pointer) ASMFunction {
+    return func(count C.ulonglong, data *C.char) {
+        C.callASMFunction(C.ASMFuncPtr(f), C.ulonglong(count), data)
+    }
 }
 
 func HandleError(err error) {
@@ -122,12 +97,8 @@ func main() {
 	fileName  := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [5]TestFunction{
-		{name: "WriteToAllBytes", fun: writeToAllBytes},
-		{name: "MOVAllBytes", fun: MOVAllBytes},
-		{name: "NOPAllBytes", fun: NOPAllBytes},
-		{name: "CMPAllBytes", fun: CMPAllBytes},
-		{name: "DECAllBytes", fun: DECAllBytes},
+	testFunctions := [1]TestFunction{
+		{name: "MOVAllBytes", fun: wrapASMFunction(C.MOVAllBytesASM)},
 	}
 
 	// Create multiple testers, one for each test function.
@@ -154,11 +125,24 @@ func main() {
 	for i := 0; i < 1; i++ {
 		// for true {
 		for i, testFunc := range testFunctions {
+			tester := testers[i]
+
 			fmt.Println("---", testFunc.name, "---")
 			secondsToTry := uint32(3)
-			testers[i].NewTestWave(byteCount, cpuFreq, secondsToTry)
+			tester.NewTestWave(byteCount, cpuFreq, secondsToTry)
 
-			testFunc.fun(testers[i], &params)
+			for tester.IsTesting() {
+				destBuffer := params.dest
+				count := C.ulonglong(len(destBuffer))
+				cBytes := (*C.char)(unsafe.Pointer(&destBuffer[0]))
+
+				tester.BeginTime()
+				testFunc.fun(count, cBytes)
+				tester.EndTime()
+				tester.CountBytes(uint64(len(destBuffer)))
+			}
+
+			// testFunc.fun(testers[i], &params)
 			// fmt.Println("")
 		}
 		fmt.Println("=========================================")

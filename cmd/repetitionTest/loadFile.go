@@ -1,5 +1,4 @@
-// Tests "stars align" best-possible speed for reading files different ways with
-// the standard library.
+// Tests file reads for best possible speed using standard library functions.
 
 package main
 

@@ -9,7 +9,7 @@ package main
 // #cgo CFLAGS: -I.
 
 // Linker flags: -L. look for libraries in cur dir. -ltheName link against file "theName".
-#cgo LDFLAGS: -L. -lnopLoop
+#cgo LDFLAGS: -L. -lnopLoopPatterns
 
 // Used as a generic wrapper so that we can all any asm routine without making a Go wrapper.
 #include <stdint.h>
@@ -22,7 +22,9 @@ typedef char u8;
 typedef long long unsigned u64;
 
 // Prototypes
-void MOVAllBytesASM(u64 count, u8 *data);
+void NOP3x1AllBytes(u64 count, u8 *data);
+void NOP1x3AllBytes(u64 count, u8 *data);
+void NOP1x9AllBytes(u64 count, u8 *data);
 */
 import "C"
 
@@ -56,19 +58,6 @@ func writeToAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) 
 	}
 }
 
-func MOVAllBytes(rt *repetitionTester.RepetitionTester, params *ReadParams) {
-	for rt.IsTesting() {
-		destBuffer := params.dest
-		count := uint64(len(destBuffer))
-
-		cBytes := (*C.char)(unsafe.Pointer(&destBuffer[0]))
-		rt.BeginTime()
-		C.MOVAllBytesASM(C.ulonglong(count), cBytes)
-		rt.EndTime()
-		rt.CountBytes(uint64(len(destBuffer)))
-	}
-}
-
 type ASMFunction func(count C.ulonglong, data *C.char)
 type TestFunction struct {
 	name string
@@ -97,8 +86,10 @@ func main() {
 	fileName  := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [1]TestFunction{
-		{name: "MOVAllBytes", fun: wrapASMFunction(C.MOVAllBytesASM)},
+	testFunctions := [3]TestFunction{
+		{name: "NOP3x1AllBytes", fun: wrapASMFunction(C.NOP3x1AllBytes)},
+		{name: "NOP1x3AllBytes", fun: wrapASMFunction(C.NOP1x3AllBytes)},
+		{name: "NOP1x9AllBytes", fun: wrapASMFunction(C.NOP1x9AllBytes)},
 	}
 
 	// Create multiple testers, one for each test function.
@@ -141,9 +132,6 @@ func main() {
 				tester.EndTime()
 				tester.CountBytes(uint64(len(destBuffer)))
 			}
-
-			// testFunc.fun(testers[i], &params)
-			// fmt.Println("")
 		}
 		fmt.Println("=========================================")
 	}

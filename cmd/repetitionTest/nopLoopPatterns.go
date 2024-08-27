@@ -132,9 +132,6 @@ func main() {
 				tester.EndTime()
 				tester.CountBytes(uint64(len(destBuffer)))
 			}
-
-			// testFunc.fun(testers[i], &params)
-			// fmt.Println("")
 		}
 		fmt.Println("=========================================")
 	}

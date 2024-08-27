@@ -1,5 +1,4 @@
-// Tests "stars align" best-possible speed for reading files different ways with
-// the standard library.
+// Tests memory touch speed vs different forms of reduced instructions.
 
 package main
 

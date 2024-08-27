@@ -20,7 +20,7 @@ MOVAllBytesASM:
 NOPAllBytesASM:
 	xor rax, rax
 .loop:
-	nop
+	db 0x0f, 0x1f, 0x00 ; Byte sequence for 3-byte NOP
 	inc rax
 	cmp rax, rcx
 	jb .loop

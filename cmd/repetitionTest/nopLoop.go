@@ -4,7 +4,10 @@
 package main
 
 /*
-#cgo CFLAGS: -I.
+// Compiler flags: -I. look for .h files in cur dir. Not needed here because I put code below.
+// #cgo CFLAGS: -I.
+
+// Linker flags: -L. look for libraries in cur dir. -ltheName link against file "theName".
 #cgo LDFLAGS: -L. -lnopLoop
 
 typedef char u8;

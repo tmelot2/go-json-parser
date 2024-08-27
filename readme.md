@@ -44,12 +44,12 @@ go run .
 go run -tags=profile .
 ```
 
-Run repetition tester:
+Run repetition tester (with file loading function comparisons):
 ```sh
 cd cmd/repetitionTest
 
 # Run app
-go run .
+go run loadFile.go
 ```
 
 ## Example Profiler Output
@@ -100,6 +100,35 @@ Max: 2685497 (0.725788ms) 1.420176gb/s PF: 272 (3.9736k/fault)
 Avg: 1183749 (0.319922ms) 3.221866gb/s PF: 272 (3.9736k/fault)
 ```
 
+## Running Custom Assembly Routines
+
+We have to examine & tweak custom assembly language routines. Here's an example of how to do that using `cmd/repetitionTest/nopLoop.go`, which compares 4 routines:
+
+1. Write the assembly (see `nopLoop.asm`).
+2. Assemble it with nasm:
+	```sh
+	nasm -f win64 -o nopLoop.obj nopLoop.asm
+	```
+3. Create a linkable library from the assembled obj:
+	```sh
+	lib nopLoop.obj
+	```
+4. Setup cgo in Go source:
+	```go
+	/*
+	#cgo CFLAGS: -I.
+	#cgo LDFLAGS: -L. -lnopLoop
+
+	typedef char u8;
+	typedef long long unsigned u64;
+	void MOVAllBytesASM(u64 count, u8 *data);
+	void NOPAllBytesASM(u64 count);
+	void CMPAllBytesASM(u64 count);
+	void DECAllBytesASM(u64 count);
+	*/
+	import "C"
+	```
+5. Call your functions like `C.MOVAllBytesASM(...)`
 
 ## Progress
 
@@ -117,7 +146,7 @@ Avg: 1183749 (0.319922ms) 3.221866gb/s PF: 272 (3.9736k/fault)
 	- TODO: Support recursive profiled blocks. You can do this now, but the numbers get crazy & meaningless.
 - Repetition tester
 	- Also also works!
-	- Repeatedly measures calls to different Go stl file read functions in order to find the "stars align" best-case speed. Outputs best, worse, & average.
+	- Repeatedly measures calls to different functions to find the "stars align" best-case speed. Outputs best, worse, & average.
 
 ## Todo
 

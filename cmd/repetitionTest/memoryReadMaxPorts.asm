@@ -11,16 +11,16 @@ section .text
 Read_x1:
 .loop:
 	mov rbx, [rdx]
-	dec rcx
-	jnz .loop
+	sub rcx, 1
+	jnle .loop
 	ret
 
 Read_x2:
 .loop:
 	mov rbx, [rdx]
 	mov rbx, [rdx]
-	dec rcx
-	jnz .loop
+	sub rcx, 2
+	jnle .loop
 	ret
 
 Read_x3:
@@ -28,8 +28,8 @@ Read_x3:
 	mov rbx, [rdx]
 	mov rbx, [rdx]
 	mov rbx, [rdx]
-	dec rcx
-	jnz .loop
+	sub rcx, 3
+	jnle .loop
 	ret
 
 Read_x4:
@@ -38,6 +38,6 @@ Read_x4:
 	mov rbx, [rdx]
 	mov rbx, [rdx]
 	mov rbx, [rdx]
-	dec rcx
-	jnz .loop
+	sub rcx, 4
+	jnle .loop
 	ret

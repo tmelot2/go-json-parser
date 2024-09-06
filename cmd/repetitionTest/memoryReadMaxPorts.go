@@ -1,4 +1,31 @@
-// Tests different implementations of NOP loops to illustrate CPU front end bottlenecks.
+/*
+Tests sets of memory reads (from the same address) to see how many read ports are on my CPU's backend.
+
+Output on my Zen3 Ryzen 5900x:
+
+--- Read_x1 ---
+Min: 837532 (0.226355ms) 4.553680gb/s
+Max: 1989268 (0.537627ms) 1.917214gb/s
+Avg: 893534 (0.241490ms) 4.268277gb/s
+
+--- Read_x2 ---
+Min: 837532 (0.226355ms) 4.553680gb/s
+Max: 2123319 (0.573857ms) 1.796175gb/s
+Avg: 886816 (0.239674ms) 4.300616gb/s
+
+--- Read_x3 ---
+Min: 837532 (0.226355ms) 4.553680gb/s
+Max: 1868056 (0.504868ms) 2.041616gb/s
+Avg: 881333 (0.238193ms) 4.327368gb/s
+
+--- Read_x4 ---
+Min: 1673510 (0.452289ms) 2.278954gb/s
+Max: 3000811 (0.811011ms) 1.270941gb/s
+Avg: 1769710 (0.478289ms) 2.155073gb/s
+
+As we can plainly see, there's a wall after 3x read. This is confirmed by the AMD Zen3 architecture
+manual which states that the Load-Store unit can do 3 memory uops per cycle.
+*/
 
 package main
 
@@ -7,7 +34,7 @@ package main
 // #cgo CFLAGS: -I.
 
 // Linker flags: -L. look for libraries in cur dir. -ltheName link against file "theName".
-#cgo LDFLAGS: -L. -lnopLoopPatterns
+#cgo LDFLAGS: -L. -lmemoryReadMaxPorts
 
 // Used as a wrapper so that we can all asm routines without making a Go wrapper for each.
 #include <stdint.h>
@@ -20,9 +47,10 @@ typedef char u8;
 typedef long long unsigned u64;
 
 // Prototypes
-void NOP3x1AllBytes(u64 count, u8 *data);
-void NOP1x3AllBytes(u64 count, u8 *data);
-void NOP1x9AllBytes(u64 count, u8 *data);
+void Read_x1(u64 count, u8 *data);
+void Read_x2(u64 count, u8 *data);
+void Read_x3(u64 count, u8 *data);
+void Read_x4(u64 count, u8 *data);
 */
 import "C"
 
@@ -84,10 +112,11 @@ func main() {
 	fileName  := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [3]TestFunction{
-		{name: "NOP3x1AllBytes", fun: wrapASMFunction(C.NOP3x1AllBytes)},
-		{name: "NOP1x3AllBytes", fun: wrapASMFunction(C.NOP1x3AllBytes)},
-		{name: "NOP1x9AllBytes", fun: wrapASMFunction(C.NOP1x9AllBytes)},
+	testFunctions := [4]TestFunction{
+		{name: "Read_x1", fun: wrapASMFunction(C.Read_x1)},
+		{name: "Read_x2", fun: wrapASMFunction(C.Read_x2)},
+		{name: "Read_x3", fun: wrapASMFunction(C.Read_x3)},
+		{name: "Read_x4", fun: wrapASMFunction(C.Read_x4)},
 	}
 
 	// Create multiple testers, one for each test function.

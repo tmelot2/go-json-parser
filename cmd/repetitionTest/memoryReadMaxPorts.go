@@ -4,24 +4,24 @@ Tests sets of memory reads (from the same address) to see how many read ports ar
 Output on my Zen3 Ryzen 5900x:
 
 --- Read_x1 ---
-Min: 837532 (0.226355ms) 4.553680gb/s
-Max: 1989268 (0.537627ms) 1.917214gb/s
-Avg: 893534 (0.241490ms) 4.268277gb/s
+Min: 860831307 (232.650340ms) 4.391733gb/s
+Max: 894005366 (241.616041ms) 4.228768gb/s
+Avg: 870280652 (235.204143ms) 4.344049gb/s PF: 10 (107137.0208k/fault)
 
 --- Read_x2 ---
-Min: 837532 (0.226355ms) 4.553680gb/s
-Max: 2123319 (0.573857ms) 1.796175gb/s
-Avg: 886816 (0.239674ms) 4.300616gb/s
+Min: 432655763 (116.930587ms) 8.737990gb/s
+Max: 441937767 (119.439164ms) 8.554466gb/s
+Avg: 433870482 (117.258880ms) 8.713526gb/s
 
 --- Read_x3 ---
-Min: 837532 (0.226355ms) 4.553680gb/s
-Max: 1868056 (0.504868ms) 2.041616gb/s
-Avg: 881333 (0.238193ms) 4.327368gb/s
+Min: 288269701 (77.908463ms) 13.114599gb/s
+Max: 304143404 (82.198528ms) 12.430128gb/s
+Avg: 289645586 (78.280313ms) 13.052302gb/s
 
 --- Read_x4 ---
-Min: 1673510 (0.452289ms) 2.278954gb/s
-Max: 3000811 (0.811011ms) 1.270941gb/s
-Avg: 1769710 (0.478289ms) 2.155073gb/s
+Min: 433797361 (117.239118ms) 8.714994gb/s
+Max: 446228049 (120.598666ms) 8.472219gb/s
+Avg: 434966322 (117.555044ms) 8.691573gb/s
 
 As we can plainly see, there's a wall after 3x read. This is confirmed by the AMD Zen3 architecture
 manual which states that the Load-Store unit can do 3 memory uops per cycle.
@@ -107,7 +107,7 @@ func main() {
 	// debug.SetGCPercent(-1)
 
 	// Input args
-	fileNameArg  := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	fileNameArg  := flag.String("fileName", "../../pairs10m.json", "Path to pairs JSON file")
 	flag.Parse()
 	fileName  := *fileNameArg
 

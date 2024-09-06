@@ -1,5 +1,5 @@
 /*
-Tests sets of memory reads (from the same address) to see how many read ports are on my CPU's backend.
+Tests sets of memory reads & writes (from the same address) to see how many read & write ports are on my CPU's backend.
 
 Output on my Zen3 Ryzen 5900x:
 
@@ -23,8 +23,31 @@ Min: 433797361 (117.239118ms) 8.714994gb/s
 Max: 446228049 (120.598666ms) 8.472219gb/s
 Avg: 434966322 (117.555044ms) 8.691573gb/s
 
-As we can plainly see, there's a wall after 3x read. This is confirmed by the AMD Zen3 architecture
-manual which states that the Load-Store unit can do 3 memory uops per cycle.
+--- Write_x1 ---
+Min: 864173739 (233.553674ms) 4.374747gb/s
+Max: 869435139 (234.975632ms) 4.348273gb/s
+Avg: 866220450 (234.106822ms) 4.364410gb/s
+
+--- Write_x2 ---
+Min: 429674118 (116.124761ms) 8.798625gb/s
+Max: 440838535 (119.142083ms) 8.575796gb/s
+Avg: 431436287 (116.601009ms) 8.762688gb/s
+
+--- Write_x3 ---
+Min: 430378635 (116.315165ms) 8.784222gb/s
+Max: 450368921 (121.717788ms) 8.394322gb/s
+Avg: 431712939 (116.675777ms) 8.757073gb/s
+
+--- Write_x4 ---
+Min: 431487784 (116.614927ms) 8.761642gb/s
+Max: 456714495 (123.432758ms) 8.277691gb/s
+Avg: 434968295 (117.555578ms) 8.691534gb/s
+
+For reads, as we can plainly see, there's a wall after 3x. This is confirmed by the AMD Zen3 architecture
+manual which states that the Load-Store unit can do 3 load memory uops per cycle.
+
+For writes, there's a wall after 2x, which is also confirmed by the manual which states that 2 of the 3
+can be writes.
 */
 
 package main
@@ -51,6 +74,10 @@ void Read_x1(u64 count, u8 *data);
 void Read_x2(u64 count, u8 *data);
 void Read_x3(u64 count, u8 *data);
 void Read_x4(u64 count, u8 *data);
+void Write_x1(u64 count, u8 *data);
+void Write_x2(u64 count, u8 *data);
+void Write_x3(u64 count, u8 *data);
+void Write_x4(u64 count, u8 *data);
 */
 import "C"
 
@@ -112,11 +139,15 @@ func main() {
 	fileName  := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [4]TestFunction{
+	testFunctions := [8]TestFunction{
 		{name: "Read_x1", fun: wrapASMFunction(C.Read_x1)},
 		{name: "Read_x2", fun: wrapASMFunction(C.Read_x2)},
 		{name: "Read_x3", fun: wrapASMFunction(C.Read_x3)},
 		{name: "Read_x4", fun: wrapASMFunction(C.Read_x4)},
+		{name: "Write_x1", fun: wrapASMFunction(C.Write_x1)},
+		{name: "Write_x2", fun: wrapASMFunction(C.Write_x2)},
+		{name: "Write_x3", fun: wrapASMFunction(C.Write_x3)},
+		{name: "Write_x4", fun: wrapASMFunction(C.Write_x4)},
 	}
 
 	// Create multiple testers, one for each test function.

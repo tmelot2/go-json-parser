@@ -3,3 +3,4 @@ pairs*.json
 .vscode
 *.obj
 *.lib
+*.exe

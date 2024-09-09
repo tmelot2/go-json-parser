@@ -1,30 +1,54 @@
 /*
-Tests sets of memory reads (from the same address) to see how many read ports are on my CPU's backend.
+Tests sets of memory reads & writes (from the same address) to see how many read & write ports are on my CPU's backend.
 
 Output on my Zen3 Ryzen 5900x:
 
 --- Read_x1 ---
-Min: 837532 (0.226355ms) 4.553680gb/s
-Max: 1989268 (0.537627ms) 1.917214gb/s
-Avg: 893534 (0.241490ms) 4.268277gb/s
+Min: 829961208 (224.307593ms) 4.555077gb/s
+Max: 855320711 (231.161322ms) 4.420023gb/s
+Avg: 836111407 (225.969763ms) 4.521571gb/s PF: 5 (214274.0416k/fault)
 
 --- Read_x2 ---
-Min: 837532 (0.226355ms) 4.553680gb/s
-Max: 2123319 (0.573857ms) 1.796175gb/s
-Avg: 886816 (0.239674ms) 4.300616gb/s
+Min: 417322371 (112.786689ms) 9.059032gb/s
+Max: 427022106 (115.408166ms) 8.853258gb/s
+Avg: 418978102 (113.234171ms) 9.023232gb/s
 
 --- Read_x3 ---
-Min: 837532 (0.226355ms) 4.553680gb/s
-Max: 1868056 (0.504868ms) 2.041616gb/s
-Avg: 881333 (0.238193ms) 4.327368gb/s
+Min: 277102916 (74.890594ms) 13.643078gb/s
+Max: 286161630 (77.338827ms) 13.211194gb/s
+Avg: 279378168 (75.505510ms) 13.531969gb/s
 
 --- Read_x4 ---
-Min: 1673510 (0.452289ms) 2.278954gb/s
-Max: 3000811 (0.811011ms) 1.270941gb/s
-Avg: 1769710 (0.478289ms) 2.155073gb/s
+Min: 277795482 (75.077769ms) 13.609065gb/s
+Max: 293696787 (79.375300ms) 12.872244gb/s
+Avg: 285612182 (77.190332ms) 13.236609gb/s
 
-As we can plainly see, there's a wall after 3x read. This is confirmed by the AMD Zen3 architecture
-manual which states that the Load-Store unit can do 3 memory uops per cycle.
+--- Write_x1 ---
+Min: 830239263 (224.382741ms) 4.553551gb/s
+Max: 873916098 (236.186963ms) 4.325972gb/s
+Avg: 843678161 (228.014775ms) 4.481018gb/s
+
+--- Write_x2 ---
+Min: 417625253 (112.868547ms) 9.052462gb/s
+Max: 424076388 (114.612048ms) 8.914754gb/s
+Avg: 419151657 (113.281077ms) 9.019496gb/s
+
+--- Write_x3 ---
+Min: 416096487 (112.455378ms) 9.085722gb/s
+Max: 429491634 (116.075587ms) 8.802353gb/s
+Avg: 417987042 (112.966325ms) 9.044627gb/s
+
+--- Write_x4 ---
+Min: 416248002 (112.496327ms) 9.082414gb/s
+Max: 423301793 (114.402704ms) 8.931067gb/s
+Avg: 418604758 (113.133271ms) 9.031280gb/s
+
+
+For reads, as we can plainly see, there's a wall after 3x. This is confirmed by the AMD Zen3 architecture
+manual which states that the Load-Store unit can do 3 load memory uops per cycle.
+
+For writes, there's a wall after 2x, which is also confirmed by the manual which states that 2 of the 3
+can be writes.
 */
 
 package main
@@ -34,7 +58,7 @@ package main
 // #cgo CFLAGS: -I.
 
 // Linker flags: -L. look for libraries in cur dir. -ltheName link against file "theName".
-#cgo LDFLAGS: -L. -lmemoryReadMaxPorts
+#cgo LDFLAGS: -L. -lmemoryReadWriteMaxPorts
 
 // Used as a wrapper so that we can all asm routines without making a Go wrapper for each.
 #include <stdint.h>
@@ -51,6 +75,10 @@ void Read_x1(u64 count, u8 *data);
 void Read_x2(u64 count, u8 *data);
 void Read_x3(u64 count, u8 *data);
 void Read_x4(u64 count, u8 *data);
+void Write_x1(u64 count, u8 *data);
+void Write_x2(u64 count, u8 *data);
+void Write_x3(u64 count, u8 *data);
+void Write_x4(u64 count, u8 *data);
 */
 import "C"
 
@@ -107,16 +135,20 @@ func main() {
 	// debug.SetGCPercent(-1)
 
 	// Input args
-	fileNameArg  := flag.String("fileName", "../../pairs.json", "Path to pairs JSON file")
+	fileNameArg  := flag.String("fileName", "../../pairs10m.json", "Path to pairs JSON file")
 	flag.Parse()
 	fileName  := *fileNameArg
 
 	// Table of test functions to test.
-	testFunctions := [4]TestFunction{
+	testFunctions := [8]TestFunction{
 		{name: "Read_x1", fun: wrapASMFunction(C.Read_x1)},
 		{name: "Read_x2", fun: wrapASMFunction(C.Read_x2)},
 		{name: "Read_x3", fun: wrapASMFunction(C.Read_x3)},
 		{name: "Read_x4", fun: wrapASMFunction(C.Read_x4)},
+		{name: "Write_x1", fun: wrapASMFunction(C.Write_x1)},
+		{name: "Write_x2", fun: wrapASMFunction(C.Write_x2)},
+		{name: "Write_x3", fun: wrapASMFunction(C.Write_x3)},
+		{name: "Write_x4", fun: wrapASMFunction(C.Write_x4)},
 	}
 
 	// Create multiple testers, one for each test function.

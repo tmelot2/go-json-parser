@@ -13,6 +13,7 @@ section .text
 ; 1st param is RCX (count), 2nd param is RDX (data pointer).
 
 Read_x1:
+	align 64
 .loop:
 	mov rbx, [rdx]
 	sub rcx, 1
@@ -20,6 +21,7 @@ Read_x1:
 	ret
 
 Read_x2:
+	align 64
 .loop:
 	mov rbx, [rdx]
 	mov rbx, [rdx]
@@ -28,6 +30,7 @@ Read_x2:
 	ret
 
 Read_x3:
+	align 64
 .loop:
 	mov rbx, [rdx]
 	mov rbx, [rdx]
@@ -37,6 +40,7 @@ Read_x3:
 	ret
 
 Read_x4:
+	align 64
 .loop:
 	mov rbx, [rdx]
 	mov rbx, [rdx]
@@ -48,6 +52,7 @@ Read_x4:
 
 Write_x1:
 	xor rbx, rbx
+	align 64
 .loop:
 	mov [rdx], rbx
 	sub rcx, 1
@@ -56,6 +61,7 @@ Write_x1:
 
 Write_x2:
 	xor rbx, rbx
+	align 64
 .loop:
 	mov [rdx], rbx
 	mov [rdx], rbx
@@ -65,6 +71,7 @@ Write_x2:
 
 Write_x3:
 	xor rbx, rbx
+	align 64
 .loop:
 	mov [rdx], rbx
 	mov [rdx], rbx
@@ -75,6 +82,7 @@ Write_x3:
 
 Write_x4:
 	xor rbx, rbx
+	align 64
 .loop:
 	mov [rdx], rbx
 	mov [rdx], rbx

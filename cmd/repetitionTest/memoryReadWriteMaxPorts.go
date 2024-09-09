@@ -4,44 +4,45 @@ Tests sets of memory reads & writes (from the same address) to see how many read
 Output on my Zen3 Ryzen 5900x:
 
 --- Read_x1 ---
-Min: 860831307 (232.650340ms) 4.391733gb/s
-Max: 894005366 (241.616041ms) 4.228768gb/s
-Avg: 870280652 (235.204143ms) 4.344049gb/s PF: 10 (107137.0208k/fault)
+Min: 829961208 (224.307593ms) 4.555077gb/s
+Max: 855320711 (231.161322ms) 4.420023gb/s
+Avg: 836111407 (225.969763ms) 4.521571gb/s PF: 5 (214274.0416k/fault)
 
 --- Read_x2 ---
-Min: 432655763 (116.930587ms) 8.737990gb/s
-Max: 441937767 (119.439164ms) 8.554466gb/s
-Avg: 433870482 (117.258880ms) 8.713526gb/s
+Min: 417322371 (112.786689ms) 9.059032gb/s
+Max: 427022106 (115.408166ms) 8.853258gb/s
+Avg: 418978102 (113.234171ms) 9.023232gb/s
 
 --- Read_x3 ---
-Min: 288269701 (77.908463ms) 13.114599gb/s
-Max: 304143404 (82.198528ms) 12.430128gb/s
-Avg: 289645586 (78.280313ms) 13.052302gb/s
+Min: 277102916 (74.890594ms) 13.643078gb/s
+Max: 286161630 (77.338827ms) 13.211194gb/s
+Avg: 279378168 (75.505510ms) 13.531969gb/s
 
 --- Read_x4 ---
-Min: 433797361 (117.239118ms) 8.714994gb/s
-Max: 446228049 (120.598666ms) 8.472219gb/s
-Avg: 434966322 (117.555044ms) 8.691573gb/s
+Min: 277795482 (75.077769ms) 13.609065gb/s
+Max: 293696787 (79.375300ms) 12.872244gb/s
+Avg: 285612182 (77.190332ms) 13.236609gb/s
 
 --- Write_x1 ---
-Min: 864173739 (233.553674ms) 4.374747gb/s
-Max: 869435139 (234.975632ms) 4.348273gb/s
-Avg: 866220450 (234.106822ms) 4.364410gb/s
+Min: 830239263 (224.382741ms) 4.553551gb/s
+Max: 873916098 (236.186963ms) 4.325972gb/s
+Avg: 843678161 (228.014775ms) 4.481018gb/s
 
 --- Write_x2 ---
-Min: 429674118 (116.124761ms) 8.798625gb/s
-Max: 440838535 (119.142083ms) 8.575796gb/s
-Avg: 431436287 (116.601009ms) 8.762688gb/s
+Min: 417625253 (112.868547ms) 9.052462gb/s
+Max: 424076388 (114.612048ms) 8.914754gb/s
+Avg: 419151657 (113.281077ms) 9.019496gb/s
 
 --- Write_x3 ---
-Min: 430378635 (116.315165ms) 8.784222gb/s
-Max: 450368921 (121.717788ms) 8.394322gb/s
-Avg: 431712939 (116.675777ms) 8.757073gb/s
+Min: 416096487 (112.455378ms) 9.085722gb/s
+Max: 429491634 (116.075587ms) 8.802353gb/s
+Avg: 417987042 (112.966325ms) 9.044627gb/s
 
 --- Write_x4 ---
-Min: 431487784 (116.614927ms) 8.761642gb/s
-Max: 456714495 (123.432758ms) 8.277691gb/s
-Avg: 434968295 (117.555578ms) 8.691534gb/s
+Min: 416248002 (112.496327ms) 9.082414gb/s
+Max: 423301793 (114.402704ms) 8.931067gb/s
+Avg: 418604758 (113.133271ms) 9.031280gb/s
+
 
 For reads, as we can plainly see, there's a wall after 3x. This is confirmed by the AMD Zen3 architecture
 manual which states that the Load-Store unit can do 3 load memory uops per cycle.
@@ -57,7 +58,7 @@ package main
 // #cgo CFLAGS: -I.
 
 // Linker flags: -L. look for libraries in cur dir. -ltheName link against file "theName".
-#cgo LDFLAGS: -L. -lmemoryReadMaxPorts
+#cgo LDFLAGS: -L. -lmemoryReadWriteMaxPorts
 
 // Used as a wrapper so that we can all asm routines without making a Go wrapper for each.
 #include <stdint.h>
